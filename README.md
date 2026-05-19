@@ -514,6 +514,23 @@
 - AT: Hidden text referenced via `aria-labelledby` / `aria-describedby` — by default ATs don't relay hidden information, but the Accessible Name and Description Computation spec lets authors explicitly include hidden text as an accessible name or description; the browser exposes the hidden text accordingly.
 - AT: Explore by touch on touch screen readers — touch-screen screen readers (e.g., Android TalkBack) let users drag a finger across the screen to hear the element directly underneath; an element hidden off-canvas or shrunk to 1px is unreachable via this navigation mode, even if it remains in the accessibility tree.
 
+### Content hiding techniques and their accessibility implications
+
+| Technique | exposed to a11y APIs | keyboard accessible | visually accessible (rendered) | children exposed to a11y APIs |
+| --- | --- | --- | --- | --- |
+| `display: none;` | No | No | No | No |
+| `visibility: hidden;` | No | No | No | No |
+| `opacity: 0;` and `filter: opacity(0);` | Yes | Yes | No | Yes |
+| `clip-path: inset(100%);` | Yes | Yes | No | Yes |
+| `position` (off-canvas) | Yes | Yes | No | Yes |
+| `.visually-hidden` class | Yes | Yes | No | Yes |
+| `hidden` attribute | No | No | No | No |
+| `inert` attribute | No | No | Yes | No |
+| `tabindex="-1"` | Yes | Not reachable via tab key | Yes | Yes |
+| `disabled` attribute | Yes | Not reachable via tab key | Yes | Yes |
+| `aria-hidden` attribute | No | Yes | Yes | No |
+| `role="none"` (or `role="presentation"`) attribute | No | Yes | Yes | Yes, unless they are semantically tied to the element |
+
 ## Tools
 
 - Tool: WebAIM WAVE browser extension — evaluates web content for accessibility issues directly within the browser; the Structure tab provides a structural representation of the page including all landmarks and the heading structure within each landmark.

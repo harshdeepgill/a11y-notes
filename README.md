@@ -89,6 +89,13 @@
 - Rule: A group needs an accessible name to identify its purpose — without one, it is just an unidentified collection of items.
 - Rule: Not all that's accessible is necessarily usable — usability matters beyond technical accessibility; usability test with disabled and AT users.
 - Rule: A group of `<input type="radio">` elements sharing the same `name` is automatically exclusive — at most one can be selected, and browsers expose group size via `aria-setsize` and position via `aria-posinset`.
+- Rule: Headings are text elements and cannot be activated — they are meant to contribute to the page's heading hierarchy and be navigated to via screen reader shortcuts.
+- Rule: To make a heading control a disclosure, wrap the heading around the `<button>` — not the other way around — so the heading semantics are retained and the trigger is interactive.
+- Rule: The HTML `name` attribute does not work on custom (button-based) disclosure widgets; if the accordion is exclusive, implement the group behaviour in JavaScript.
+- Rule: When using `hidden="until-found"`, apply padding/borders/backgrounds to a child container inside the hidden element rather than to the hidden element itself — under until-found the browser uses `content-visibility: hidden` and the element still generates a box.
+- Rule: When using `hidden="until-found"`, audit reset stylesheets for `[hidden] { display: none !important; }` — that declaration overrides find-in-page reveal; replace with `[hidden]:not(:is([hidden="until-found"])) { display: none !important; }` so plain `hidden` keeps strong specificity while until-found still works.
+- Rule: Use `hidden="until-found"` only as a progressive enhancement — ensure the content remains usable in browsers that don't yet support it.
+- Rule: The end markup is key — regardless of the starting semantic skeleton (sections-with-headings, description list, etc.) you progressively enhance from, the final markup should semantically represent a meaningful grouping of accessible disclosure widgets.
 
 ## HTML Elements
 
@@ -171,7 +178,7 @@
 - Attribute: `required` — HTML boolean attribute on form controls; native equivalent of `aria-required="true"`; prefer it over the ARIA equivalent.
 - Attribute: `download` — `<a>` attribute that triggers a file download instead of navigation.
 - Attribute: `tabindex` — Controls focusability and tab order; `tabindex="0"` makes an otherwise non-focusable element focusable.
-- Attribute: `hidden` — HTML boolean attribute that hides an element from rendering and removes it from the accessibility tree; when the hidden element is referenced via `aria-labelledby`, the browser still exposes its text as the accessible name for the referencing element — useful for providing a name without leaving the text node as a separate reading stop for screen readers; pairing `hidden` with `aria-hidden="true"` is redundant.
+- Attribute: `hidden` — HTML attribute that hides an element from rendering and removes it from the accessibility tree; when the hidden element is referenced via `aria-labelledby`, the browser still exposes its text as the accessible name for the referencing element — useful for providing a name without leaving the text node as a separate reading stop for screen readers; pairing `hidden` with `aria-hidden="true"` is redundant. Supports two states — the default (`hidden`) state applies `display: none`, while the "until-found" state (`hidden="until-found"`) keeps the content discoverable to browser find-in-page and fragment navigation by using `content-visibility: hidden` instead of `display: none`; in until-found the element still generates a box, so apply padding/borders/backgrounds to a child container; once revealed via find-in-page the content stays visible (no native way to recollapse); `display: none`, `display: contents`, or `display: inline` on the until-found element prevents reveal. Chromium-only support at the time of the lecture; part of the Interop 2025 project.
 - Attribute: `open` — HTML boolean attribute on `<details>` that the browser toggles when the first `<summary>` is activated; controls whether the disclosure widget's content is visible; the browser also rewrites this attribute in the markup when `name`-based exclusive grouping is enforced.
 - Attribute: `name` — HTML attribute; on `<input type="radio">`, groups radio buttons so only one in the group can be selected at a time; on `<details>`, when the same non-empty value is set on multiple elements, enforces that at most one `<details>` in the group is `open` at a time — the browser updates the `open` attributes in markup as it enforces exclusivity, offloading exclusive-accordion behaviour from JavaScript to the browser.
 - Attribute: `title` — Can be used to indicate the purpose of a landmark such as a `<search>` element when no visible label is available.
@@ -234,6 +241,22 @@
 - Lost-while-scrolling — in long accordions users easily lose their place (per Steven Hoober's "Designing for progressive disclosure"); fixing the accordion's visible size (per Adrian Roselli's fixed-size accordion demo) is one mitigation.
 - HTML-standard caution — the HTML standard itself advises authors to consider whether grouping `<details>` into an exclusive accordion is helpful or harmful before using `name`; space savings can frustrate users who must open many items to find what they want, or compare multiple items.
 - Default inclusivity — if the accordion doesn't need to be exclusive, it's more inclusive when it's not; reach for exclusive only when usability testing supports it.
+- Custom-widget markup — group a series of `<div class="disclosure-widget">` blocks, each containing a `<button aria-expanded="false" aria-controls="…">` trigger and a panel `<div id="…" hidden>`, inside a named `<section>` (or a `<div role="group">`); ensure focus styles are present on the buttons.
+- `name`-attribute incompatibility — the HTML `name` attribute only enforces exclusivity for native `<details>`; custom (button-based) disclosure widgets require JavaScript to implement exclusive behaviour.
+- Initial markup for progressive enhancement — start from sections with headings, or a description list (`<dl>`/`<dt>`/`<dd>`) for question/answer content like FAQs; whatever skeleton you choose, the JavaScript-enhanced end markup must be a meaningful grouping of accessible disclosure widgets.
+- Interactive-headings problem — accordion sections are typically preceded by headings, but headings are text elements and cannot be activated; you need an actual interactive element to expand/collapse.
+- Wrong approach (heading-as-button) — `<h2 role="button">…` does not make the heading interactive and defeats the purpose of using a heading.
+- Wrong approach (heading inside summary) — `<summary><h3>…</h3></summary>` risks suppressing the heading's semantics because the button role's Children Presentational property treats descendants as `role="presentation"`.
+- Wrong approach (summary inside heading) — `<h3><summary>…</summary></h3>` makes `<summary>` no longer the first child of `<details>`, so it stops being the trigger.
+- Correct approach (heading wraps button) — `<h3><button aria-expanded="…" aria-controls="…">…</button></h3>` keeps heading semantics intact while keeping the trigger interactive; this is the safe pattern for "interactive headings" in an accordion.
+- AT support matrix for heading-in-`<summary>` — VoiceOver (macOS 15.3.1) exposes the heading with Safari 18.3, Firefox 136, and Edge 132; NVDA + Firefox v136 on Windows exposes it; Narrator + Chromium Edge exposes it; JAWS 2024 exposes it with Chromium but NOT with Firefox; older JAWS versions don't expose it anywhere — so the heading-wraps-button custom pattern is the most consistent.
+- Find-in-page limitation on custom widgets — panels hidden via `display: none` or plain `hidden` are NOT discoverable through the browser's find-in-page functionality; the browser cannot search the hidden text and won't auto-expand the section.
+- Find-in-page enablement — set the panel's hidden state to `hidden="until-found"` (e.g., `panel.setAttribute("hidden", "until-found")`); supporting browsers will search the hidden text and auto-expand the matching panel.
+- hidden-until-found CSS gotcha — reset rules like `[hidden] { display: none !important; }` override `hidden="until-found"`; replace with `[hidden]:not(:is([hidden="until-found"])) { display: none !important; }` so plain `hidden` keeps strong specificity while until-found works.
+- hidden-until-found generated-box gotcha — under until-found the browser uses `content-visibility: hidden` rather than `display: none`, so the element still generates a box; any margin/padding/borders/backgrounds on it render unexpectedly — move them to an inner container (e.g., `.panel__content`).
+- hidden-until-found display gotcha — if the hidden element's computed `display` is `none`, `contents`, or `inline`, find-in-page will not reveal it.
+- hidden-until-found persistence — once content is revealed via find-in-page, it stays visible after closing or starting a new search; there is currently no native way to recollapse it.
+- hidden-until-found browser support — Chromium-only at the time of the lecture; expected to broaden via Interop 2025; use as a progressive enhancement only.
 
 ### Breadcrumb
 
@@ -268,6 +291,9 @@
 - Progressive enhancement — start with a static version where the content panel is visible and there is no `<button>`; in JavaScript, create and prepend a `<button>` into the container, set initial ARIA attributes, hide the panel, and wire up the click handler — so if JS fails to load, the content remains accessible and the user isn't faced with a broken control.
 - Native vs custom decision — use `<details>`/`<summary>` for simple disclosures where the semantics, behaviour, and find-in-page expansion fit (good starting foundation for content accordions); build a custom ARIA disclosure when you need consistent cross-browser/screen-reader announcements, want to avoid unwanted built-in behaviour, or the pattern requires different semantics (tabs, drop-down navigations, dialogs).
 - Future native API — the OpenUI group is developing an "Openable API" (placeholder name) that will let you enhance native `<button>`s into disclosure buttons declaratively; not yet supported in any browser. The Popover API and Invoker Commands API proposals are related work in this area.
+- Find-in-page on custom widgets — a custom `<button>` + `hidden` disclosure is invisible to browser find-in-page by default (the panel is hidden via `display: none`); switch the hidden state to `hidden="until-found"` to make the panel discoverable to find-in-page and fragment navigation in supporting (Chromium-only at lecture time, broadening via Interop 2025) browsers.
+- hidden-until-found CSS interference — `[hidden] { display: none !important; }` reset rules block until-found's effect; use `[hidden]:not(:is([hidden="until-found"])) { display: none !important; }` instead so plain `hidden` still wins on specificity while until-found works.
+- hidden-until-found generated-box — under until-found browsers use `content-visibility: hidden`, so the hidden element still generates a box; move padding, borders, and backgrounds to a child container (e.g., `.panel__content`) to avoid unexpected whitespace and borders.
 
 ### Menu / Menubar
 
@@ -329,6 +355,9 @@
 - Anti-pattern: Defaulting to `aria-label` for naming an element — reserve it as a last resort; prefer `aria-labelledby` to a visible or hidden text node.
 - Anti-pattern: Using the `name` attribute on `<details>` when you need bulk expand/collapse — the browser enforces "at most one open", breaking the feature.
 - Anti-pattern: Defaulting to exclusive accordions — they raise cognitive load, frustrate comparing sections, disorient on content shifts, break heading navigation, and reset on reload; choose exclusive only when usability testing supports it.
+- Anti-pattern: Placing `<summary>` inside its heading (`<h3><summary>…</summary></h3>`) — `<summary>` is no longer the first direct child of `<details>` and stops being the disclosure's trigger.
+- Anti-pattern: Hiding accordion panels with plain `hidden` or `display: none` when find-in-page discoverability is wanted — the content becomes unsearchable and unreachable via fragment navigation; use `hidden="until-found"` as a progressive enhancement instead.
+- Anti-pattern: Applying padding/borders/backgrounds directly to an element in the `hidden="until-found"` state — the element still generates a box (under `content-visibility: hidden`), so these styles render unexpectedly; move them to a child container.
 
 ## Decision Rules
 
@@ -348,6 +377,8 @@
 - Decision: Naming hierarchy — `aria-labelledby` pointing to a visible heading > `aria-labelledby` pointing to a hidden text node (use `hidden`, not visually-hidden) > `aria-label` as a last resort.
 - Decision: Native accordion vs ARIA + JavaScript — use `<details>` + `<summary>` + `name` for a standard exclusive accordion (no JS); reach for ARIA + JavaScript when you need exact-exclusive behaviour, bulk expand/collapse, custom animations, finer control, or content types unsuited to `<details>`.
 - Decision: Exclusive vs non-exclusive accordion — let usability testing with disabled and AT users decide; default to non-exclusive when in doubt because it is more inclusive.
+- Decision: Heading inside `<summary>` vs heading wrapping `<button>` — prefer the custom (heading-wraps-button) markup when your users may be on AT pairings that don't expose headings in `<summary>` (e.g., JAWS prior to 2024, or JAWS + Firefox); `<details>` + heading-inside-`<summary>` is acceptable only when all target AT pairings reliably expose those headings.
+- Decision: `hidden` vs `hidden="until-found"` — use `hidden="until-found"` when the content benefits from being discoverable via browser find-in-page and fragment navigation; use plain `hidden`, `display: none`, or `visibility: hidden` when full hiding from all access channels is desired.
 
 ## Keyboard Behaviour
 
@@ -388,6 +419,11 @@
 - AT: Double announcement of visually-hidden labels — when a `<span class="visually-hidden">` is both an `aria-labelledby` target AND visible to AT as content, screen readers read it twice (once as the accessible name, once as page content); hiding the span with the HTML `hidden` attribute removes the second announcement while `aria-labelledby` still exposes it as the name.
 - AT: Radio-button group announcement — when radio buttons share a `name`, the browser exposes the group size via `aria-setsize` and the focused item's position via `aria-posinset`, so screen readers announce e.g. "radio button, 1 of 3".
 - AT: Future `<details>` group announcement — browsers may, in future, expose group size and position for `name`-grouped `<details>` the same way they do for radio buttons; not yet implemented at the time of the lecture — perform your own testing.
+- AT: VoiceOver + headings in `<summary>` — VoiceOver on macOS exposes the presence of a heading placed inside a `<summary>` when paired with Safari, Firefox, and Chromium-based browsers (tested macOS 15.3.1 / Safari 18.3 / Firefox 136 / Edge 132).
+- AT: NVDA + headings in `<summary>` — NVDA with Firefox v136 on Windows exposes the presence of headings inside `<summary>`.
+- AT: Narrator + headings in `<summary>` — Narrator paired with Chromium Edge exposes the presence of headings inside `<summary>`.
+- AT: JAWS + headings in `<summary>` — JAWS 2024 announces a heading inside `<summary>` when paired with Chromium browsers, but currently does not when paired with Firefox; older JAWS versions don't expose them anywhere with any browser. Many AT users intentionally don't upgrade their software (per Eric Bailey's "truths about digital accessibility"), so pre-2024 JAWS users would miss those headings.
+- AT: Custom heading-wraps-button — placing the `<button>` of a custom disclosure inside its heading exposes the heading's semantics consistently across all current browser/screen-reader pairings, regardless of AT version.
 
 ## Tools
 

@@ -16,12 +16,18 @@
 - Rule: Limit the number of landmarks on a page — too many landmarks reduce navigation efficiency and stop the truly important regions from standing out.
 - Rule: Ensure all content on the page is contained within a meaningful landmark region, and use headings for fine-grained navigation within each region.
 - Rule: Verify landmarks and heading structure using WebAIM's WAVE browser extension.
+- Rule: What an element is determines how it can be used; semantics convey what an element is, and therefore how it can be used.
+- Rule: Using an element with the wrong semantics breaks user expectations of what will happen on interaction and can confuse users who try to operate the element a certain way but can't.
+- Rule: Style an element according to its semantics — if it behaves like a button, style it like a button; if it is a link, avoid styling it to look like a button.
+- Rule: Designers should define interactive behaviour in design mockups or specifications and annotate designs so developers know exactly what they are implementing.
 - Rule: Buttons trigger actions on the page (e.g., submitting forms, opening dialogs, toggling navigation, showing/hiding content).
 - Rule: Buttons and links have different semantics and are not interchangeable.
 - Rule: Wire up a button's action via JavaScript or the HTML Invoker Commands API.
 - Rule: Disable a native button using the HTML `disabled` attribute.
+- Rule: Links do not require JavaScript to do what they do — they are inherently capable of redirecting the user to other places.
 - Rule: Links can also download files (via `download`), open email apps (`mailto:`), or dial phone numbers (`tel:`).
 - Rule: Links cannot be disabled with the HTML `disabled` attribute — that attribute applies only to form controls.
+- Rule: Links expose unique browser affordances — most browsers show the `href` value in the status bar on hover, right-click reveals link-specific options, and a link can be opened in a new tab/browser window.
 - Rule: The `role` attribute only changes the exposed role in the accessibility tree; it does not add behaviour or actually convert the element.
 - Rule: Only enhance a link into a button as part of a deliberate progressive-enhancement strategy because of the manual work involved.
 
@@ -36,8 +42,8 @@
 - Element: `<search>` — maps to the search landmark role; preferred over legacy `role="search"` on a `<form>` or `<div>`.
 - Element: `<section>` — does not affect the document outline, but its implicit region role is exposed as a landmark when it is given an accessible name — preferred element for custom regions.
 - Element: `<div>` — no implicit landmark role; can be turned into a landmark by adding an explicit ARIA `role` attribute when markup cannot be changed.
-- Element: `<button>` — does nothing on its own except inside a `<form>`, where it may submit the form; focusable by default (no `tabindex="0"` needed); keyboard operable via Space and Enter.
-- Element: `<a>` — only represents a hyperlink when it has an `href` attribute; without `href` it maps to the generic ARIA role, is not exposed in the accessibility tree, and is removed from the tab order; when it has `href` it is focusable by default (no `tabindex="0"` needed).
+- Element: `<button>` — implicit button role with semantics and behaviour baked in; does nothing on its own except inside a `<form>`, where it may submit the form; focusable by default (no `tabindex="0"` needed); keyboard operable via Space and Enter; can be disabled with the HTML `disabled` attribute.
+- Element: `<a>` — has an implicit link role only when it has an `href` attribute; without `href` it represents a placeholder for a link, maps to the generic ARIA role, is not exposed in the accessibility tree, and is removed from the tab order (not even focusable in most browsers); when it has `href` it is focusable by default (no `tabindex="0"` needed) and is activated by the Enter key only.
 
 ## ARIA Roles
 
@@ -79,8 +85,8 @@
 - Pattern: Create a search landmark — wrap the search controls in `<search>`; give it an accessible name via a heading + `aria-labelledby`, `aria-label`, `title`, or a hidden text label (e.g., a `<span hidden>`) referenced by `aria-labelledby`.
 - Pattern: Create a custom region — wrap content in `<section>` (or use a `<div>` with `role="region"`) and give it an accessible name, preferably referencing a visible heading via `aria-labelledby`.
 - Pattern: Retrofit landmarks onto an existing site — apply ARIA role values (banner, navigation, main, contentinfo, complementary, form, search, region) to existing elements like `<div>` when the markup cannot be changed.
-- Pattern: Disable a link — remove its `href`, reinstate link semantics with `role="link"`, and convey state with `aria-disabled="true"`.
-- Pattern: Enhance a link into a button — override link semantics with `role="button"`; prevent the default link behaviour; trigger an alternative action via JavaScript; implement full button keyboard behaviour by firing on keydown for Enter (keyCode 13) and on keyup for Space (keyCode 32); add styles targeting Forced Colors modes (e.g., Windows High Contrast Mode) so it appears as a button.
+- Pattern: Disable a link — remove its `href` so the browser no longer provides link interactive behaviour; reinstate link semantics with `role="link"`; convey the disabled state to screen readers with `aria-disabled="true"`.
+- Pattern: Enhance a link into a button — override link semantics with `role="button"`; attach a click handler that calls `e.preventDefault()` and triggers the action; implement full button keyboard behaviour by firing on keydown for Enter (keyCode 13) and on keyup for Space (keyCode 32); add styles targeting Forced Colors modes (e.g., Windows High Contrast Mode) so it appears as a button.
 
 ## Anti-Patterns
 
@@ -90,7 +96,7 @@
 
 ## Decision Rules
 
-- Decision: Button vs link — if a control takes the user to another page or section, use a link; if it changes something on the current page (layout, dialog, new view), use a button.
+- Decision: Button vs link — if a control takes the user to another page or a section within the page (the URL changes when the element is clicked), use a link; if it changes something on the current page (layout, dialog, new view), use a button.
 - Decision: Links take users places — that is their core difference from buttons.
 - Decision: Is it really a link? — if you cannot right-click an element to open it in a new window, it is probably not a link.
 - Decision: Is it really a button? — if an element does nothing without JavaScript, it is probably a button.
@@ -112,8 +118,9 @@
 - AT: Landmark navigation availability — every screen reader provides at least one command or gesture for navigating between landmarks; per WebAIM's 9th screen reader user survey more than 25% of screen reader users use landmarks very often.
 - AT: Beneficiaries of landmarks — primarily useful for screen reader users, but also benefit keyboard users who use browser extensions that enable landmark navigation via keyboard or a pop-up menu.
 - AT: `<a>` without `href` — maps to the generic ARIA role, is not exposed in the accessibility tree, and is removed from the tab order.
+- AT: Disabled link announcement — an `<a>` without `href` plus `role="link"` and `aria-disabled="true"` is announced by screen readers as a disabled/dimmed link, while the absence of `href` ensures it cannot be activated.
 - AT: `role` attribute scope — changes only the exposed role in the accessibility tree; does not add behaviour or actually convert the element.
-- AT: Forced Colors modes — modes like Windows High Contrast Mode use inherent element semantics rather than the accessibility tree, so an enhanced link-as-button needs styles targeting those modes to appear as a button.
+- AT: Not all ATs use the accessibility tree — Forced Colors modes such as Windows High Contrast Mode use the inherent semantics of the element rather than the accessibility tree, so an enhanced link-as-button needs styles targeting those modes to appear as a button.
 
 ## Tools
 
@@ -123,3 +130,5 @@
 
 - Term: WCAG — Web Content Accessibility Guidelines.
 - Term: Landmark region — a recognisable key area of a page or application that helps users orient themselves on a page and navigate easily to its different areas.
+- Term: Semantics — what an element is, and therefore how it can be used.
+- Term: Hyperlink — per the HTML living standard, an `<a>` element with an `href` attribute that represents a hypertext anchor labelled by its contents.

@@ -1,1 +1,61 @@
-hello world
+- Rule: WCAG stands for Web Content Accessibility Guidelines.
+- Rule: An element's accessibility information has four parts — role, name, description, and state.
+- Rule: Accessibility information in the accessibility tree is shaped by HTML semantics, applied styles, and any ARIA attributes used.
+- Rule: There should be only one H1 per page.
+- Rule: A landmark region is a recognisable key area of a page that helps users orient themselves and navigate.
+- Rule: Identifying landmarks is required to conform to WCAG SC 1.3.1 (Info and Relationships) and SC 2.4.1 (Bypass Blocks).
+- Rule: There are eight landmark regions defined by eight ARIA roles, each with an HTML element that implicitly maps to that role.
+- Rule: Use `<header>` for the banner landmark; it is only exposed as a banner when it is a direct child of `<body>`, not when nested in another sectioning element.
+- Rule: Aim for only one banner landmark per site.
+- Rule: Use `<nav>` for navigation landmarks; multiple navigation landmarks per page are allowed.
+- Rule: When using more than one navigation landmark, give each an accessible name via `aria-label` or `aria-labelledby`.
+- Rule: Use `<main>` as a direct child of `<body>`, with only one main landmark per page.
+- Rule: Use `<footer>` for the contentinfo landmark; it is only mapped to contentinfo when scoped directly to `<body>`.
+- Rule: Explicit `role="contentinfo"` on `<footer>` is no longer required in modern browsers (post-Safari 13).
+- Rule: Use `<aside>` for the complementary landmark; it should be a sibling or child of the main landmark.
+- Rule: When more than one complementary landmark exists, label each with a descriptive heading via `aria-labelledby`.
+- Rule: Use `<form>` for the form landmark; it is only exposed as a form landmark when it has an accessible name.
+- Rule: Do not expose a form as a landmark when the form is the page's primary content.
+- Rule: Use the HTML `<search>` element for the search landmark instead of the legacy `role="search"` on a `<form>` or `<div>`.
+- Rule: Multiple search landmarks are allowed; give each an accessible name.
+- Rule: Use `<section>` with an accessible name (preferred), or apply `role="region"` to another element such as `<div>`, to expose a generic region landmark.
+- Rule: A generic region must have an accessible name to be surfaced as a landmark.
+- Rule: For existing sites whose markup cannot be changed, apply ARIA role values (banner, navigation, main, contentinfo, complementary, form, search, region) to existing elements like `<div>`.
+- Rule: Let the visual design guide landmark choices so the visual and semantic structure align.
+- Rule: Limit the number of landmarks on a page — too many landmarks reduce navigation efficiency.
+- Rule: Verify landmarks and heading structure using WebAIM's WAVE browser extension.
+- Rule: Buttons trigger actions on the page (e.g., submitting forms, opening dialogs, toggling navigation, showing/hiding content).
+- Rule: Buttons and links have different semantics and are not interchangeable.
+- Rule: An HTML `<button>` does nothing on its own except inside a `<form>`, where it may submit the form.
+- Rule: Wire up a button's action via JavaScript or the HTML Invoker Commands API.
+- Rule: A native `<button>` is focusable by default and does not need `tabindex="0"`.
+- Rule: A native `<button>` is keyboard operable via Space and Enter.
+- Rule: Disable a native button using the HTML `disabled` attribute.
+- Rule: Links take users places — that is their core difference from buttons.
+- Rule: Links can also download files (via `download`), open email apps (`mailto:`), or dial phone numbers (`tel:`).
+- Rule: An `<a>` only represents a hyperlink when it has an `href` attribute.
+- Rule: An `<a>` without `href` maps to the generic ARIA role, is not exposed in the accessibility tree, and is removed from the tab order.
+- Rule: Links are focusable by default and do not need `tabindex="0"`.
+- Rule: Links are activated by the Enter key only.
+- Rule: Links cannot be disabled with the HTML `disabled` attribute — that attribute applies only to form controls.
+- Rule: To disable a link, remove its `href`, then reinstate semantics with `role="link"` and convey state with `aria-disabled="true"`.
+- Rule: If a control takes the user to another page or section, use a link.
+- Rule: If a control changes something on the current page (layout, dialog, new view), use a button.
+- Rule: If you cannot right-click an element to open it in a new window, it is probably not a link.
+- Rule: If an element does nothing without JavaScript, it is probably a button.
+- Rule: A meaningless `href` such as `href="#"` is a signal you should be using a button instead.
+- Rule: To enhance a link into a button, override link semantics with `role="button"`, prevent the default link behaviour, trigger an alternative action via JavaScript, and implement full button keyboard behaviour for Enter and Space.
+- Rule: The `role` attribute only changes the exposed role in the accessibility tree; it does not add behaviour or actually convert the element.
+- Rule: Enter on a native button fires on keydown and continues firing while held.
+- Rule: Space on a native button fires on keyup; if Space is held and the user tabs away without releasing, the action will not fire.
+- Rule: On a link enhanced as a button, fire the action on keydown for Enter (keyCode 13) and on keyup for Space (keyCode 32).
+- Rule: Only enhance a link into a button as part of a deliberate progressive-enhancement strategy because of the manual work involved.
+- Rule: Forced Colors modes (e.g., Windows High Contrast Mode) use inherent element semantics rather than the accessibility tree, so an enhanced link-as-button needs styles targeting those modes to appear as a button.
+- Attribute: `role` — ARIA attribute that exposes an element's type in the accessibility tree (e.g., `button`, `link`, `banner`, `navigation`, `main`); changes only the exposed role, not behaviour.
+- Attribute: `aria-label` — Provides an accessible name; the attribute's value is used directly as the label.
+- Attribute: `aria-labelledby` — Provides an accessible name by referencing another element (typically a heading) on the page as the label.
+- Attribute: `aria-disabled` — Conveys disabled state to assistive technologies, e.g., `aria-disabled="true"`.
+- Attribute: `href` — Required on `<a>` for it to be a hyperlink; defines the link's destination as a URL or in-page fragment.
+- Attribute: `disabled` — HTML attribute that disables form controls including `<button>`; does not apply to links.
+- Attribute: `download` — `<a>` attribute that triggers a file download instead of navigation.
+- Attribute: `tabindex` — Controls focusability and tab order; `tabindex="0"` makes an otherwise non-focusable element focusable.

@@ -120,6 +120,15 @@
 - Rule: Prefer inline `<svg>` over external/`<img>` when you need CSS access to the SVG's inner shapes, animations, or Forced Colors adaptation.
 - Rule: Render every native state on the visual replacement — checked, unchecked, disabled, focus, hover, and (where applicable) indeterminate.
 - Rule: Optimise custom-styled form controls for Forced Colors modes via a `@media (forced-colors: active)` block.
+- Rule: A visible label and an accessible name are not strictly the same — ideally they should be identical; when they differ, the name must contain the visible label (per SC 2.5.3 Label in Name).
+- Rule: A visible label does not guarantee an accessible name — you must explicitly create the programmatic association (e.g., `<label for>`/`id`, `aria-labelledby`, `aria-label`).
+- Rule: The name an AT user hears should match the visual label a sighted user sees on the page.
+- Rule: Speech-control software activates a control by matching spoken input against the accessible name; a mismatch between the visible label and the accessible name means the control can't be activated by speech.
+- Rule: Some ARIA roles are "name-prohibited" — they cannot have an accessible name (caption, code, definition, deletion, emphasis, generic, insertion, mark, paragraph, presentation, strong, subscript, suggestion, superscript, term, time); this applies whether the role is implicit or explicitly set.
+- Rule: Before giving an accessible name to an element, check whether the element's role permits one — `aria-label` on a `<div>` or `<span>` (generic role) is invalid.
+- Rule: An accessible name is short and succinct; an accessible description is longer and provides additional cues about how to use the component (e.g., field requirements, error messages).
+- Rule: Tables, dialogs, and form-field groupings benefit from accessible names — they help users understand purpose and context.
+- Rule: Group related form controls with `<fieldset>` and provide the group's accessible name via `<legend>` — this creates the relationship between fields and identifies the group's purpose.
 
 ## HTML Elements
 
@@ -148,7 +157,9 @@
 - Element: `<input type="radio">` — radio button; a group of radio buttons sharing the same `name` attribute becomes mutually exclusive (only one can be selected); browsers expose group size via `aria-setsize` and the focused item's position via `aria-posinset`, so screen readers can announce "radio button, 1 of 3" or similar. Like checkboxes, ships default checked/disabled/Forced Colors styling and can be visually replaced by an inline `<svg>` using the same inclusive-hide technique.
 - Element: `<label>` — programmatically associates with a form control via its `for` attribute matching the control's `id`; the label text becomes the control's accessible name. Wrapping the `<input>` AND its visual replacement (e.g., an inline `<svg>`) inside the `<label>` enlarges the control's interactive area.
 - Element: `<h2>` — visible heading commonly used as the accessible name source for a group or region via `aria-labelledby`.
-- Element: `<fieldset>` — form-grouping element; applying `disabled` disables the fieldset and all of its descendant controls; applying `inert` makes the region and its descendants inert (rendered but inaccessible).
+- Element: `<fieldset>` — form-grouping element for related form controls; pairs with `<legend>` (its first child) to expose the group's accessible name; applying `disabled` disables the fieldset and all of its descendant controls; applying `inert` makes the region and its descendants inert (rendered but inaccessible).
+- Element: `<legend>` — supplies the accessible name for its parent `<fieldset>`; helps users understand the purpose of the grouped controls (e.g., "Shipping Address", "Billing Address").
+- Element: Name-prohibited HTML elements — `<caption>`, `<figcaption>`, `<code>`, `<del>`, `<em>`, `<ins>`, `<mark>`, `<p>`, `<strong>`, `<sub>`, `<sup>`, `<dfn>`, `<time>` (and generic `<div>`/`<span>`) all map to roles that disallow an accessible name; `aria-label`/`aria-labelledby` on these elements is invalid.
 - Element: `<dialog>` — native HTML dialog element; when used in modal mode, the browser provides built-in inert-outside behaviour, sparing you from DOM-traversal + `aria-hidden` plumbing.
 - Element: `<select>` — form control that can be disabled with the `disabled` attribute (no keyboard focus, no mouse events, no tab key).
 - Element: `<img>` — applying `role="none"`, `aria-hidden="true"`, or `alt=""` to an `<img>` all hide it equivalently from screen readers (suitable for decorative images).
@@ -166,7 +177,7 @@
 - Role: `region` — generic landmark for a perceivable section of content important enough that users will likely want to navigate to it and see it listed in a page summary; requires an accessible name.
 - Role: `button` — exposes an element as a button in the accessibility tree; widget role with a Children Presentational property that suppresses descendants' semantics; only changes the exposed role, not behaviour; doesn't convey expanded/collapsed state on its own.
 - Role: `link` — exposes an element as a link in the accessibility tree (used to reinstate link semantics after removing `href`).
-- Role: `generic` — what an `<a>` without an `href` (and a `<div>`/`<span>` by default) maps to; not exposed in the accessibility tree.
+- Role: `generic` — what an `<a>` without an `href` (and a `<div>`/`<span>` by default) maps to; not exposed in the accessibility tree; name-prohibited — an element mapping to generic cannot have an accessible name (e.g., `<div aria-label="…">` is invalid).
 - Role: `list` — implicit role of `<ul>` and `<ol>`; can be re-instated with `role="list"` when CSS strips list semantics.
 - Role: `group` — represents a set of UI elements forming a logical collection of items in a widget; the implicit role of `<details>`; principal difference from `region` is that a group is **not** included in the page summary, outline, or table of contents by assistive technologies; needs an accessible name to identify its purpose.
 - Role: `tablist` — composite widget role that owns child `tab` roles; no native HTML element maps to tablist; used together with `tab` and `tabpanel` to compose a Tabs widget.
@@ -183,7 +194,8 @@
 - Role: `switch` — widget role; allowed on `<button>`.
 - Role: `searchbox` — interactive widget role.
 - Role: `heading` — document-structure role; pairs with `aria-level` to indicate heading level; not permitted on `<button>`.
-- Role: `presentation` — suppresses an element's implicit semantics in the accessibility tree; the element no longer maps to its native role UNLESS the element is focusable (natively or via `tabindex`) OR it has a global ARIA state/property (e.g., `aria-label`); descendants of certain roles are treated as if they had `role="presentation"`; on a focusable element (e.g., a link), screen readers no longer announce the role but still announce the element's contents. ARIA 1.1 introduced `role="none"` as a synonym — `presentation` is often confused with `aria-hidden="true"`; prefer `role="none"`.
+- Role: `presentation` — suppresses an element's implicit semantics in the accessibility tree; the element no longer maps to its native role UNLESS the element is focusable (natively or via `tabindex`) OR it has a global ARIA state/property (e.g., `aria-label`); descendants of certain roles are treated as if they had `role="presentation"`; on a focusable element (e.g., a link), screen readers no longer announce the role but still announce the element's contents; name-prohibited — an element with `role="presentation"` cannot have an accessible name. ARIA 1.1 introduced `role="none"` as a synonym — `presentation` is often confused with `aria-hidden="true"`; prefer `role="none"`.
+- Role: Name-prohibited roles — `caption`, `code`, `definition`, `deletion`, `emphasis`, `generic`, `insertion`, `mark`, `paragraph`, `presentation`, `strong`, `subscript`, `suggestion`, `superscript`, `term`, `time`; any element mapping (implicitly or explicitly) to one of these roles cannot have an accessible name.
 - Role: `none` — synonym of `presentation`; preferred wording because it is less likely to be misread as "hide this element"; same suppression rules and exceptions apply.
 
 ## Attributes
@@ -191,7 +203,7 @@
 - Attribute: `role` — ARIA attribute that exposes an element's type in the accessibility tree (e.g., `button`, `link`, `banner`, `navigation`, `main`, `contentinfo`, `complementary`, `form`, `search`, `region`, `list`, `group`, `tablist`, `tab`, `tabpanel`, `menu`, `menubar`, `menuitem`, `presentation`); changes only the exposed role, not behaviour.
 - Attribute: `aria-label` — Provides an accessible name; the attribute's value is used directly as the label; recommended only as a last resort — prefer `aria-labelledby` referencing a visible heading or a hidden text node.
 - Attribute: `aria-labelledby` — Provides an accessible name by referencing another element (typically a heading or a hidden `<span>`) on the page as the label.
-- Attribute: `aria-describedby` — Property that references one or more elements on the page to provide an accessible description for the element it is used on.
+- Attribute: `aria-describedby` — Property that references one or more elements on the page (by `id`) to provide an accessible description for the element it is used on; the description is appended to the element's name and role and presented to the user as a flat string of text — any structured content (lists, links) inside the referenced element loses its semantics when announced. Whether and when the description is announced depends on the browser/AT pairing, the association method, and the user's interaction type; when announced, the description typically follows the name and role.
 - Attribute: `aria-disabled` — Conveys disabled state to assistive technologies, e.g., `aria-disabled="true"`.
 - Attribute: `aria-current` — Used on a link to indicate it is the current item in a set; supports values such as `true` and `page` — `page` causes screen readers to announce "link, current page" instead of just "link, current".
 - Attribute: `aria-pressed` — State on a button-like element indicating whether the toggle is currently pressed (`true`) or not (`false`); changes must be managed via JavaScript.
@@ -223,7 +235,9 @@
 - WCAG: SC 2.1.1 Keyboard (Level A) — "All functionality of the content is operable through a keyboard interface without requiring specific timings for individual keystrokes, except where the underlying function requires input that depends on the path of the user's movement and not just the endpoints." The baseline keyboard-accessibility requirement for any interactive component, including custom ARIA widgets.
 - WCAG: SC 2.1.3 Keyboard (No Exception) (Level AAA) — "All functionality of the content is operable through a keyboard interface without requiring specific timings for individual keystrokes." The stricter, no-exception version of SC 2.1.1.
 - WCAG: SC 2.4.1 Bypass Blocks — exists to ensure assistive technology users have a way to bypass repeated content and facilitate page navigation; using proper landmark elements is one way to meet this criterion.
-- WCAG: SC 4.1.2 — referenced as being violated when an ARIA role conflicts with the nature of the element it is applied to (e.g., `role="heading"` on a `<button>`), because the semantic mismatch may prevent users from interacting with the element as announced.
+- WCAG: SC 4.1.2 Name, Role, Value (Level A) — "For all user interface components (including but not limited to: form elements, links and components generated by scripts), the name and role can be programmatically determined;" — referenced as being violated when an ARIA role conflicts with the nature of the element it is applied to (e.g., `role="heading"` on a `<button>`), because the semantic mismatch may prevent users from interacting with the element as announced.
+- WCAG: SC 2.5.3 Label in Name — "For user interface components with labels that include text or images of text, the name contains the text that is presented visually." When the visible label and accessible name don't match, the name must contain the label so speech-control users and others relying on the visible text can activate the control.
+- WCAG: SC 3.3.2 Labels or Instructions (Level A) — "Labels or instructions are provided when content requires user input." All form controls (and widgets) that expect user input are required to have a visible label, plus a description where needed.
 
 ## Patterns & Recipes
 
@@ -253,6 +267,11 @@
 - Pattern: Inclusively hide a native form control replaced by an inline SVG — wrap `<input>` and `<svg aria-hidden="true">` inside the `<label>`; set the label/wrapper to `position: relative`; on the input set `position: absolute; opacity: 0; width: 1em; height: 1em` (relative units recommended; optional `z-index`); style the SVG via `input:focus-visible + svg`, `input:disabled + svg`, `input:checked + svg`; add a `@media (forced-colors: active)` block for Forced Colors adaptation.
 - Pattern: Visible keyboard focus on a visually-replaced form control — target the adjacent SVG with `input[type="checkbox"]:focus-visible + svg { outline: 2px solid …; outline-offset: 4px; }`.
 - Pattern: Animate an SVG-line-drawing checkmark on check — transition `stroke-dashoffset` on `input:checked + svg path` (e.g., `transition: stroke-dashoffset .4s linear; stroke-dashoffset: 0; stroke: currentColor`).
+- Pattern: Group related form controls — wrap the controls in `<fieldset>` and add a `<legend>` (as the first child) describing the group's purpose; the legend becomes the group's accessible name (e.g., `<legend>Shipping Address</legend>` over name/street fields).
+- Pattern: Distinguish multiple same-type landmarks — give each landmark a distinct accessible name via `aria-label` or `aria-labelledby` (e.g., `<nav aria-label="Site">` and `<nav aria-label="Social">`) so AT users can tell them apart.
+- Pattern: Allow an accessible name on a generic container — generic `<div>`/`<span>` are name-prohibited; if the container needs a name, first assign it a meaningful role (e.g., `<div role="region" aria-label="…">`) so the role qualifies for an accessible name.
+- Pattern: Accessible name for an icon-only link — include a visually-hidden `<span>` inside the link describing the destination (e.g., `<a href="…"><span class="visually-hidden">Twitter</span><i class="fa-brands fa-twitter"></i></a>`) so AT users can identify it.
+- Pattern: Provide an accessible description — set `aria-describedby` on the described element pointing to the description element's `id` (e.g., `<input … aria-describedby="passw0rd-description"><p id="passw0rd-description">…</p>`).
 
 ## Complex Components
 
@@ -421,6 +440,10 @@
 - Anti-pattern: Hiding an interactive form control (e.g., a checkbox you're replacing with an SVG) with the `visually-hidden` utility class — mobile screen-reader users exploring by touch won't reach the 1px-clipped control.
 - Anti-pattern: Hiding a replaced form control by moving it off-canvas with absolute positioning — outside the viewport, touch screen-reader users dragging their finger across the screen can't find it.
 - Anti-pattern: Shrinking a replaced form control to 1px — very hard to find by touch, even when within viewport bounds.
+- Anti-pattern: `aria-label` on a `<div>`, `<span>`, or any element with a name-prohibited role — invalid; the element cannot have an accessible name. If the element needs a name, give it a meaningful role first.
+- Anti-pattern: Visible label without programmatic association (e.g., `<span>Username</span><input>`) — sighted users see the label, AT users get no accessible name.
+- Anti-pattern: Icon-only links or buttons without a text alternative — AT users can't identify them; the WebAIM 2022 One Million survey found 50.1% of homepages had empty links and 27.2% had empty buttons.
+- Anti-pattern: Using only an icon-font character as a label — the unicode character supplied by the icon-font stylesheet isn't recognised by AT, so the link/button is treated as empty.
 
 ## Decision Rules
 
@@ -449,6 +472,7 @@
 - Decision: `sr-only` vs `visually-hidden` class name — prefer `visually-hidden` because accessibility APIs expose the content to more than just screen readers.
 - Decision: `role="presentation"` vs `role="none"` — synonyms; prefer `role="none"` because `presentation` is often confused with `aria-hidden="true"`.
 - Decision: `visually-hidden` vs inclusive form-control hide — use `visually-hidden` for static textual content; use the inclusive hide (input overlaid on its visual replacement with `position: absolute; opacity: 0`) for interactive form controls being visually replaced by an image — the inclusive hide keeps the control reachable by touch.
+- Decision: Accessible name vs accessible description — use a name to identify a component (short, succinct); use a description for longer usage cues such as form-field requirements, hints, or error messages.
 
 ## Keyboard Behaviour
 
@@ -514,6 +538,11 @@
 - AT: Hidden text referenced via `aria-labelledby` / `aria-describedby` — by default ATs don't relay hidden information, but the Accessible Name and Description Computation spec lets authors explicitly include hidden text as an accessible name or description; the browser exposes the hidden text accordingly.
 - AT: Explore by touch on touch screen readers — touch-screen screen readers (e.g., Android TalkBack) let users drag a finger across the screen to hear the element directly underneath; an element hidden off-canvas or shrunk to 1px is unreachable via this navigation mode, even if it remains in the accessibility tree.
 
+- AT: Accessible name announcement — accessible names are always announced by screen readers.
+- AT: Accessible description announcement — descriptions may or may not be announced; whether they are announced depends on the browser/AT pairing, the association method used, and the user's interaction type.
+- AT: Description placement in announcement — when announced, an accessible description is typically appended after the element's name and role.
+- AT: Description loses structure — the description is presented as a flat string of text; if the referenced element contains lists, links, or other structured content, the semantics are lost when announced.
+
 ### Content hiding techniques and their accessibility implications
 
 | Technique | exposed to a11y APIs | keyboard accessible | visually accessible (rendered) | children exposed to a11y APIs |
@@ -537,7 +566,9 @@
 - Tool: a11ysupport.io — high-level overview of ARIA attributes and their expected support across browser/screen-reader combinations; the tests may not always be up-to-date, so always perform your own testing.
 - Tool: JAWS — Windows screen reader; effectively the only screen reader that currently exposes the `aria-controls` relationship to users (and even that support is poor, per Heydon Pickering's "aria-controls is poop").
 - Tool: VoiceOver Web Rotor — macOS VoiceOver feature that provides a list/summary of items on a page, including a Landmarks list; named `<section>` regions appear in this list, but named `role="group"` containers do not.
-- Tool: Edge / Chrome DevTools accessibility panel — inspect the accessibility tree to verify how content is exposed to screen readers (e.g., confirm an icon button's accessible name is derived from a referenced hidden `<span>`).
+- Tool: Edge / Chrome DevTools accessibility panel — inspect the accessibility tree to verify how content is exposed to screen readers (e.g., confirm an icon button's accessible name is derived from a referenced hidden `<span>`); also surfaces whether an element has an accessible name, what the name is, where it came from, and a list of all naming methods available to the element.
+- Tool: NVDA elements list (Insert+F7) — pulls up a list of all links (and other elements) on the page and explicitly notes which ones are unlabelled.
+- Tool: WebAIM One Million survey — annual audit of the top 1,000,000 websites; 2022 results: 50.1% of homepages had empty links, 27.2% had empty buttons, 46.1% had missing form-input labels — among the top 6 most common a11y issues.
 - Tool: Accessibility Insights for Windows — desktop application for inspecting how content is exposed in the accessibility tree (used in the lecture to demonstrate that a heading with `role="none"` is reported as plain text vs a heading exposed as a heading).
 - Tool: Android TalkBack — Android touch-screen screen reader that supports "explore by touch" navigation: users drag their finger across the screen to hear what is directly underneath.
 
@@ -572,3 +603,7 @@
 - Term: Icon button — a button containing only an icon and no visible accompanying text; needs a text alternative (e.g., via `aria-labelledby` referencing a hidden `<span>`) so screen-reader users can identify it.
 - Term: Explore by touch — per the Material Design Accessibility Guidelines, "Touch interface screen readers allow users to run their finger over the screen to hear what is directly underneath. This provides the user with a quick sense of an entire interface."
 - Term: Inclusive hide (for form controls) — visually hiding a native form control while keeping it within the viewport in its natural position (via `position: absolute; opacity: 0`, sometimes enlarged with relative width/height) so touch screen-reader users can still find it by haptics.
+- Term: Accessible name (accName) — a string of text programmatically associated with an element and exposed by the browser to assistive technologies via the accessibility tree; provides a label for the element to AT users.
+- Term: Accessible description (accDesc) — a longer programmatically-associated string that helps the user understand how to use a component; exposed via the accessibility tree and, when announced, appended after the element's name and role as a flat string of text.
+- Term: Label vs accessible name — the "label" is what is presented visually; the "accessible name" is the string exposed to AT. Per WCAG SC 2.5.3 Label in Name, the two should ideally match, and when they differ the name must contain the visible label.
+- Term: Name-prohibited role — an ARIA role for which the spec disallows an accessible name (caption, code, definition, deletion, emphasis, generic, insertion, mark, paragraph, presentation, strong, subscript, suggestion, superscript, term, time); applies whether the role is implicit or explicit.

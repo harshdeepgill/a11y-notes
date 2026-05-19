@@ -229,8 +229,10 @@
 - Heading-navigation gotcha — exclusive accordions break heading-based screen-reader navigation because not all content can be open at once; heading levels can also become "wonky" when headings are used inside the expand/collapse trigger.
 - Dragon gotcha — Dragon voice software deprioritises `<details>` compared to buttons/links, making accordion sections harder for Dragon users to open.
 - Reflow gotcha — content shifting as one section opens and another closes can disorient low-vision, mobile, and vestibular-disorder users; state also resets on page reload.
-- Cognitive-load gotcha — exclusive accordions raise cognitive load because users cannot compare information between two sections and have difficulty scanning the overall content.
-- Lost-while-scrolling — in long accordions users easily lose their place; fixing the accordion's visible size (per Adrian Roselli's fixed-size accordion demo) is one mitigation.
+- Cognitive-load gotcha — exclusive accordions raise cognitive load because users cannot compare information between two sections and have difficulty scanning the overall content (per Eric Eggert's "Exclusive Accordions Exclude").
+- Keyboard-fatigue gotcha — for keyboard users, comparing information across two sections of an exclusive accordion can take dozens of keystrokes (open one, navigate to the next, open it, navigate back, etc.).
+- Lost-while-scrolling — in long accordions users easily lose their place (per Steven Hoober's "Designing for progressive disclosure"); fixing the accordion's visible size (per Adrian Roselli's fixed-size accordion demo) is one mitigation.
+- HTML-standard caution — the HTML standard itself advises authors to consider whether grouping `<details>` into an exclusive accordion is helpful or harmful before using `name`; space savings can frustrate users who must open many items to find what they want, or compare multiple items.
 - Default inclusivity — if the accordion doesn't need to be exclusive, it's more inclusive when it's not; reach for exclusive only when usability testing supports it.
 
 ### Breadcrumb

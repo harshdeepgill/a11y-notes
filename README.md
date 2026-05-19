@@ -78,6 +78,11 @@
 - Rule: Prefer usability testing with disabled assistive-technology users to ensure components are actually usable, not just technically correct.
 - Rule: No ARIA is better than bad ARIA — incorrect ARIA misrepresents the visual experience with potentially devastating effects on assistive-technology users.
 - Rule: ARIA is a polyfill for HTML semantics — like a JavaScript polyfill, it is a last resort to fill missing features, not a tool to reach for by default; convey as much accessibility information as possible using HTML semantics and only reach for ARIA when HTML falls short.
+- Rule: Don't work around implicit ARIA role mappings — you rarely have to, and doing so (e.g., forcing `role="button"` on `<summary>`) tends to break state exposure and cross-platform announcements.
+- Rule: Add controls and ARIA attributes that require JavaScript from inside your script, not hard-coded into the markup — so users aren't left with broken controls and hidden content if JavaScript fails to load.
+- Rule: Apply progressive enhancement to interactive components — start with a working static version, then enhance with JavaScript, so the content remains accessible if the script fails for any reason (spotty connection, browser-extension interference, data-saver mode, reader mode, etc.).
+- Rule: To hide content from all users, use the HTML `hidden` attribute, CSS `display: none`, or CSS `visibility: hidden`.
+- Rule: Always place a content panel directly after its trigger in the DOM (source order), even when `aria-controls` is used — so screen-reader users can continue navigating into the revealed content and keyboard users can quickly move focus to interactive elements within the panel.
 
 ## HTML Elements
 
@@ -88,16 +93,19 @@
 - Element: `<aside>` — implicit complementary role; should be a sibling or child of the main landmark.
 - Element: `<form>` — only exposed as a form landmark when it has an accessible name.
 - Element: `<search>` — maps to the search landmark role; preferred over legacy `role="search"` on a `<form>` or `<div>`.
-- Element: `<section>` — does not affect the document outline, but its implicit region role is exposed as a landmark when it is given an accessible name — preferred element for custom regions; also commonly used with `role="tabpanel"` for tab panels.
-- Element: `<div>` — no implicit landmark role; can be turned into a landmark by adding an explicit ARIA `role` attribute when markup cannot be changed; using `<div>` instead of `<nav>` loses the navigation landmark and (in Safari 16+) also strips list semantics from any list inside it; commonly used with `role="tablist"` since no native HTML element maps to tablist.
-- Element: `<button>` — implicit button role with semantics and behaviour baked in; does nothing on its own except inside a `<form>`, where it may submit the form; focusable by default (no `tabindex="0"` needed); keyboard operable via Space and Enter; can be disabled with the HTML `disabled` attribute; ARIA roles permitted on `<button>` are `checkbox`, `link`, `menuitem`, `menuitemcheckbox`, `menuitemradio`, `option`, `radio`, `switch`, and `tab` — other roles (like `heading`) are not permitted.
+- Element: `<section>` — does not affect the document outline, but its implicit region role is exposed as a landmark when it is given an accessible name — preferred element for custom regions; also commonly used with `role="tabpanel"` for tab panels; can serve as a grouping element for a disclosure content panel when stronger semantics or landmark exposure is needed.
+- Element: `<article>` — grouping element suitable for a disclosure content panel when its semantics are appropriate.
+- Element: `<div>` — no implicit landmark role; can be turned into a landmark by adding an explicit ARIA `role` attribute when markup cannot be changed; using `<div>` instead of `<nav>` loses the navigation landmark and (in Safari 16+) also strips list semantics from any list inside it; commonly used with `role="tablist"` since no native HTML element maps to tablist; default grouping element for a disclosure content panel.
+- Element: `<button>` — implicit button role with semantics and behaviour baked in; does nothing on its own except inside a `<form>`, where it may submit the form; focusable by default (no `tabindex="0"` needed); keyboard operable via Space and Enter; can be disabled with the HTML `disabled` attribute; does not come with a built-in way to communicate expanded/collapsed state (use `aria-expanded`); ARIA roles permitted on `<button>` are `checkbox`, `link`, `menuitem`, `menuitemcheckbox`, `menuitemradio`, `option`, `radio`, `switch`, and `tab` — other roles (like `heading`) are not permitted.
 - Element: `<a>` — has an implicit link role only when it has an `href` attribute; without `href` it represents a placeholder for a link, maps to the generic ARIA role, is not exposed in the accessibility tree, and is removed from the tab order (not even focusable in most browsers); when it has `href` it is focusable by default (no `tabindex="0"` needed) and is activated by the Enter key only.
 - Element: `<ul>` — maps to the `list` role; conveys the number and order of items to screen readers; older Safari versions and Safari 16+ outside a navigation landmark remove list semantics when `list-style: none` is applied; can be safeguarded with `role="list"`.
 - Element: `<ol>` — maps to the `list` role; semantically appropriate when order matters (e.g., breadcrumbs); shares the same Safari list-semantics caveats as `<ul>`.
 - Element: `<li>` — list item element used inside `<ul>` or `<ol>`.
 - Element: `<span>` — frequently used with the HTML `hidden` attribute to create a visually-hidden text label referenced from another element via `aria-labelledby`.
-- Element: `<svg>` — can be excluded from the accessibility tree (hidden from screen readers) by adding `aria-hidden="true"` when decorative.
-- Element: `<summary>` — maps to the `button` role and is subject to the same Children Presentational rule that suppresses descendants' semantics.
+- Element: `<svg>` — can be excluded from the accessibility tree (hidden from screen readers) by adding `aria-hidden="true"` when decorative; preferred over CSS pseudo-elements for state-marker icons (e.g., on a disclosure trigger) because it offers more styling control and adapts better to Forced Colors modes.
+- Element: `<summary>` — child of `<details>`; has no implicit ARIA role in the ARIA-in-HTML spec but gets a meaningful computed role only when it is the first child of its `<details>` parent (otherwise treated as a generic `<div>`); may be exposed as "Push Button", "Button", "Summary", or "disclosure triangle" depending on platform/browser/AAPI; interactive element with browser-baked keyboard support (operable via Space and Enter); activating it toggles the `open` attribute on its `<details>` parent; comes with implicit expanded/collapsed state exposed to screen readers; subject to the Children Presentational rule.
+- Element: `<details>` — implicit `group` role; native disclosure-widget container; the first `<summary>` child is the trigger and everything after it inside `<details>` is the controlled content; the browser toggles the `open` attribute to show/hide the content; can only have one trigger (extra `<summary>` elements are ignored as triggers); if no `<summary>` is provided, the browser supplies a generic "Details" label.
+- Element: `<p>` — technically usable as the content panel of a disclosure widget; prefer a grouping element when the panel may contain more than a single paragraph.
 - Element: `<input>` — form control; requires an accessible name supplied programmatically via `<label for>` (preferred), `aria-label`, or `aria-labelledby` — visible-only labels (e.g., an adjacent `<span>` with no association) leave the input without an accessible name.
 - Element: `<label>` — programmatically associates with a form control via its `for` attribute matching the control's `id`; the label text becomes the control's accessible name.
 
@@ -111,10 +119,11 @@
 - Role: `form` — landmark for a form; only exposed when the form has an accessible name.
 - Role: `search` — landmark for a collection of elements that together create a search facility (search of the site, of the current page, or an Internet-wide search).
 - Role: `region` — generic landmark for a perceivable section of content important enough that users will likely want to navigate to it and see it listed in a page summary; requires an accessible name.
-- Role: `button` — exposes an element as a button in the accessibility tree; widget role with a Children Presentational property that suppresses descendants' semantics; only changes the exposed role, not behaviour.
+- Role: `button` — exposes an element as a button in the accessibility tree; widget role with a Children Presentational property that suppresses descendants' semantics; only changes the exposed role, not behaviour; doesn't convey expanded/collapsed state on its own.
 - Role: `link` — exposes an element as a link in the accessibility tree (used to reinstate link semantics after removing `href`).
 - Role: `generic` — what an `<a>` without an `href` (and a `<div>`/`<span>` by default) maps to; not exposed in the accessibility tree.
 - Role: `list` — implicit role of `<ul>` and `<ol>`; can be re-instated with `role="list"` when CSS strips list semantics.
+- Role: `group` — implicit role of `<details>`; used to group related elements as a single unit.
 - Role: `tablist` — composite widget role that owns child `tab` roles; no native HTML element maps to tablist; used together with `tab` and `tabpanel` to compose a Tabs widget.
 - Role: `tab` — child widget role within a `tablist` that toggles a tab panel; MUST be contained in or owned by an element with `role="tablist"`.
 - Role: `tabpanel` — widget role for the panel content associated with a `tab`.
@@ -140,9 +149,9 @@
 - Attribute: `aria-disabled` — Conveys disabled state to assistive technologies, e.g., `aria-disabled="true"`.
 - Attribute: `aria-current` — Used on a link to indicate it is the current item in a set; supports values such as `true` and `page` — `page` causes screen readers to announce "link, current page" instead of just "link, current".
 - Attribute: `aria-pressed` — State on a button-like element indicating whether the toggle is currently pressed (`true`) or not (`false`); changes must be managed via JavaScript.
-- Attribute: `aria-expanded` — State indicating whether the thing the control controls is expanded (`true` / "open") or collapsed (`false` / "closed"); update via JavaScript on user interaction.
-- Attribute: `aria-controls` — Property that creates a relationship between the element it is on and the controlled element referenced by id; note: no longer exposed by most screen readers.
-- Attribute: `aria-hidden` — Property; when `true`, the element is excluded from the accessibility tree and hidden from screen readers — but it remains in the DOM and tab order, so applying it to a focusable element or an ancestor of one results in users focusing on "nothing".
+- Attribute: `aria-expanded` — State indicating whether the element, or another grouping element it controls, is currently expanded (`true`) or collapsed (`false`); when used on a `<button>`, also communicates that the control is a disclosure button controlling the visibility of something; update via JavaScript on user interaction.
+- Attribute: `aria-controls` — Property that identifies the element(s) whose contents or presence are controlled by the current element, via the controlled element's `id`; optional and effectively only supported by JAWS (poorly) — most screen readers no longer expose this relationship.
+- Attribute: `aria-hidden` — Property; when `true`, the element is excluded from the accessibility tree and hidden from screen readers — but it remains in the DOM and tab order, so applying it to a focusable element or an ancestor of one results in users focusing on "nothing"; commonly used to hide decorative SVG icons (e.g., a disclosure state marker).
 - Attribute: `aria-valuetext` — Property holding a textual value for an element (e.g., an HTML range slider); should change as the user changes the element's value.
 - Attribute: `aria-valuenow` — Property holding the current numeric value of an element; should change as the user changes the element's value.
 - Attribute: `aria-level` — Property paired with the `heading` role to indicate heading level.
@@ -153,9 +162,10 @@
 - Attribute: `download` — `<a>` attribute that triggers a file download instead of navigation.
 - Attribute: `tabindex` — Controls focusability and tab order; `tabindex="0"` makes an otherwise non-focusable element focusable.
 - Attribute: `hidden` — HTML boolean attribute that hides an element from rendering and from the accessibility tree; also used on a `<span>` to create a visually hidden text label referenced by `aria-labelledby`; pairing `hidden` with `aria-hidden="true"` is redundant.
+- Attribute: `open` — HTML boolean attribute on `<details>` that the browser toggles when the first `<summary>` is activated; controls whether the disclosure widget's content is visible.
 - Attribute: `title` — Can be used to indicate the purpose of a landmark such as a `<search>` element when no visible label is available.
 - Attribute: `for` — `<label>` attribute referencing an input's `id` to programmatically associate the label with the input and expose its text as the input's accessible name.
-- Attribute: `id` — HTML attribute used to be referenced by `<label for>`, `aria-labelledby`, or `aria-describedby` for programmatic association.
+- Attribute: `id` — HTML attribute used to be referenced by `<label for>`, `aria-labelledby`, `aria-describedby`, or `aria-controls` for programmatic association.
 
 ## WCAG Success Criteria
 
@@ -190,18 +200,40 @@
 - Tabs: Markup — wrap the set of tabs in an element with `role="tablist"` (no native HTML element maps to tablist); each tab is typically a `<button role="tab">`; each panel is typically a `<section role="tabpanel">`.
 - Tabs: ARIA parent-child constraint — elements with `role="tab"` MUST be contained in or owned by an element with `role="tablist"`; `role="tab"` placed inside a `<nav><ul><li><a>` structure (without tablist) is invalid.
 - Tabs: Behaviour — ARIA roles add no interactive behaviour; tab activation, panel switching, focus, and keyboard support must be implemented in JavaScript.
-- Disclosure: Markup — a control (typically a `<button>`) sits adjacent to or above the panel it toggles.
-- Disclosure: ARIA — set `aria-expanded="false"` on the control when collapsed and `"true"` when expanded; optionally use `aria-controls` to reference the controlled element's id (note: no longer exposed by most screen readers).
+- Tabs: Don't reuse `<details>`/`<summary>` — Tabs have specific semantic, behaviour, and HTML-structure requirements that `<summary>` doesn't fulfil; visually styling `<details>` as tabs results in a confusing experience for screen-reader users.
+- Disclosure: Definition — an interactive control whose sole purpose is to reveal and hide content; typically a button that toggles a content panel.
+- Disclosure: Anatomy — two parts — the trigger (the button) and the panel (the content controlled by the trigger).
+- Disclosure: Building block — disclosure widgets are building blocks for several more complex patterns including accordions (a grouping of disclosure widgets), the toggle in a drop-down navigation, and the button that reveals a slide-out navigation; getting the foundations right prepares you for those patterns.
+- Disclosure: Native markup — `<details>` is the container; the first `<summary>` child is the trigger; everything after `<summary>` inside `<details>` is the controlled content; the browser toggles the `open` attribute on `<details>` to show/hide.
+- Disclosure: Native trigger constraint — `<details>` can only have one trigger; if multiple `<summary>` elements are present, only the first is treated as the trigger; if no `<summary>` is present, the browser supplies a generic "Details" label.
+- Disclosure: Native built-ins — `<summary>` is operable via Space and Enter, browser toggles the `open` attribute on activation, the browser exposes expanded/collapsed state to AT, and the `<details>` panel is auto-expanded by the browser's find-in-page search if it contains the search term.
+- Disclosure: Native role inconsistency — `<summary>` is exposed differently across platform/browser/screen-reader combinations — "disclosure triangle" (VoiceOver + Chrome v109 macOS), "Summary" (VoiceOver + Safari macOS), or "button" (NVDA + Firefox Windows, which also reads the triangle marker as part of the name); this is not a bug and should not be worked around.
+- Disclosure: Don't override `<summary>` with `role="button"` — some browsers then treat `<summary>` as a standard `<button>`, which doesn't convey expanded/collapsed state, so the state is no longer announced; the ARIA in HTML spec specifically calls this unnecessary and cross-platform-problematic.
+- Disclosure: Find-in-page caveat — once the browser auto-expands a `<details>` for in-page search, it stays expanded; this can enhance content accordions but is undesirable for tabs, drop-down navigations, and dialogs — those patterns need JavaScript to override or suppress this behaviour.
+- Disclosure: Native gaps — `<details>` doesn't dismiss on Esc; patterns like drop-down navigations or dialogs that need Esc-to-close require JavaScript to add it.
+- Disclosure: Custom widget requirements — trigger exposed as a button; trigger operable via Space and Enter; activating the trigger toggles the panel; trigger communicates expanded/collapsed state to screen readers.
+- Disclosure: Custom markup — wrap trigger + panel in a container (e.g., `<div class="disclosure-widget">`); use a `<button aria-expanded="false">` as the trigger (optionally with `aria-controls` referencing the panel's `id`); use a grouping element (`<div>` by default, or `<section>`/`<article>` if stronger semantics are needed) as the panel; place the panel directly after the trigger in the DOM.
+- Disclosure: ARIA — set `aria-expanded="false"` on the trigger when collapsed and `"true"` when expanded; optionally use `aria-controls` to reference the controlled element's `id` (only JAWS exposes the relationship and even then support is poor).
+- Disclosure: Source order — the content panel must follow the trigger in the DOM even when `aria-controls` is used, so screen-reader users can continue navigating into the revealed content and keyboard users can quickly tab into interactive elements inside the panel.
+- Disclosure: State marker — visually indicate state via a marker (triangle, chevron, plus sign, or anything familiar) provided by a CSS pseudo-element or an inline `<svg>`; inline SVG is preferred for styling control and Forced Colors adaptation; hide the SVG from AT with `aria-hidden="true"`.
+- Disclosure: Behaviour wiring — on trigger activation, JavaScript toggles `aria-expanded` and toggles panel visibility (e.g., add/remove `hidden`); optionally drive visibility entirely from CSS using `.disclosure-widget > button[aria-expanded="false"] + div { display: none; }` and animate the marker via `[aria-expanded="true"] > svg { transform: rotate(90deg); }`, so JavaScript only updates `aria-expanded`.
+- Disclosure: Hiding the panel initially — when collapsed by default, set `aria-expanded="false"` and hide the panel from all users via the HTML `hidden` attribute, `display: none`, or `visibility: hidden`.
 - Disclosure: State management — JavaScript must update `aria-expanded` on user interaction; without JavaScript the value is stale and can confuse screen-reader users.
+- Disclosure: Progressive enhancement — start with a static version where the content panel is visible and there is no `<button>`; in JavaScript, create and prepend a `<button>` into the container, set initial ARIA attributes, hide the panel, and wire up the click handler — so if JS fails to load, the content remains accessible and the user isn't faced with a broken control.
+- Disclosure: Native vs custom decision — use `<details>`/`<summary>` for simple disclosures where the semantics, behaviour, and find-in-page expansion fit (good starting foundation for content accordions); build a custom ARIA disclosure when you need consistent cross-browser/screen-reader announcements, want to avoid unwanted built-in behaviour, or the pattern requires different semantics (tabs, drop-down navigations, dialogs).
+- Disclosure: Future native API — the OpenUI group is developing an "Openable API" (placeholder name) that will let you enhance native `<button>`s into disclosure buttons declaratively; not yet supported in any browser. The Popover API and Invoker Commands API proposals are related work in this area.
 - Toggle button: ARIA — use `<button aria-pressed="true|false">` to indicate whether the toggle is on or off.
 - Toggle button: State management — JavaScript must flip `aria-pressed` when the user activates the button.
+- Accordion: Definition — by definition, a grouping of disclosure widgets.
 - Accordion: Markup — place a `<button aria-expanded="false">` inside the heading (e.g., `<h2><button aria-expanded="false">…</button></h2>`) rather than putting the role/state on the heading itself, preserving heading semantics for screen-reader navigation.
+- Accordion: Native option — `<details>`/`<summary>` provide a good starting foundation for content accordions because the find-in-page auto-expansion behaviour enhances content-heavy patterns.
 - Menu / Menubar: Structure — `role="menu"` or `role="menubar"` for the container with `role="menuitem"` children.
 - Menu / Menubar: Children constraint — `menuitem` may not contain interactive children (no nested `<button>`, no `<a>`, no elements with implicit button/link roles).
 - Menu / Menubar: Keyboard — Arrow keys navigate menu items; Space and Enter activate them; Esc closes the menu.
 - Carousel: No native ARIA role — `role="carousel"` is invalid because ARIA is finite; the spec includes no carousel role.
 - Breadcrumb: No native ARIA role — `role="breadcrumb"` is invalid; use `<nav aria-label="Breadcrumb">` so screen readers announce "Breadcrumb, Navigation" — role + name communicate everything that's needed.
 - Modal dialog: ARIA category — modal dialogs fall under the "Window roles" category of ARIA roles, which describe windows within the browser.
+- Modal dialog: Native gaps — like drop-down navigations, dialogs built on `<details>` lack Esc-to-close and other expected behaviours; JavaScript must supply them, which is one reason to prefer custom ARIA dialogs over `<details>`.
 
 ## Anti-Patterns
 
@@ -228,6 +260,12 @@
 - Anti-pattern: Interactive control without an accessible name (e.g., `<input>` with only a visually adjacent `<span>` label and no `for`/`id` association) — sighted users see the label, but the input has no accessible name in the accessibility tree.
 - Anti-pattern: Redundant ARIA roles on native elements (`<button role="button">`, `<h1 role="heading" aria-level="1">`) — duplicates implicit semantics; explicit redundancy is wasted effort and a maintenance liability.
 - Anti-pattern: Mirroring HTML state attributes with ARIA equivalents (`required` + `aria-required="true"`, `hidden` + `aria-hidden="true"`) — redundant and creates a sync liability if updated independently.
+- Anti-pattern: Multiple `<summary>` children inside a single `<details>` — the browser only uses the first one as the trigger; the rest are misleading.
+- Anti-pattern: `<details>` with no `<summary>` — the browser supplies a generic "Details" label which is almost never what you want.
+- Anti-pattern: `role="button"` on `<summary>` — some browsers then treat it as a standard `<button>` and the expanded/collapsed state announcement is lost; the ARIA in HTML spec explicitly calls this unnecessary and cross-platform-problematic.
+- Anti-pattern: Building a Tabs widget out of `<details>`/`<summary>` — Tabs have specific semantic, behaviour, and HTML structure requirements that `<summary>` doesn't fulfil; results in a confusing experience for screen-reader users.
+- Anti-pattern: Reaching for `<details>` just to write less JavaScript when the built-in behaviour (e.g., find-in-page auto-expansion) is unwanted — one feature you want doesn't justify the whole element if its other behaviour doesn't fit your pattern.
+- Anti-pattern: Hard-coding the disclosure `<button>` and hiding the panel by default — if the JavaScript fails to load, the user is faced with a broken control and the content inside the panel becomes inaccessible.
 
 ## Decision Rules
 
@@ -241,6 +279,8 @@
 - Decision: When to reach for ARIA — first ask "is there an HTML element I can use instead?"; if yes, use that. Reach for ARIA only when HTML semantics fall short (e.g., to polyfill missing semantics like `tablist`, to override native ones, to convey state like `aria-pressed`, or to fix accessibility in legacy code you can't change).
 - Decision: When to break the First Rule of ARIA — only when (1) the HTML feature isn't implemented or its accessibility support is missing, (2) visual design constraints prevent styling the native element as required, or (3) the feature doesn't exist in HTML at all.
 - Decision: Custom widget keyboard keys — avoid unfamiliar key combinations because screen readers will not announce them.
+- Decision: Native `<details>` vs custom ARIA disclosure — use `<details>`/`<summary>` for simple disclosures where the semantics, behaviour, and find-in-page expansion fit (good fit for content accordions); build a custom ARIA disclosure when you need consistent cross-browser/screen-reader announcements, want to avoid the unwanted built-in behaviour (e.g., find-in-page sticking open, lack of Esc-to-close), or the pattern requires different semantics (tabs, drop-down navigations, dialogs).
+- Decision: Disclosure content-panel element — use `<div>` by default; choose `<section>` or `<article>` only if the content warrants stronger semantics or landmark exposure; a single `<p>` is technically fine for trivial one-paragraph panels.
 
 ## Keyboard Behaviour
 
@@ -251,6 +291,7 @@
 - Key: Enter on native `<a>` — links are activated by the Enter key only.
 - Key: Enter on a link-enhanced-as-button — fire the action on keydown (keyCode 13).
 - Key: Space on a link-enhanced-as-button — fire the action on keyup (keyCode 32).
+- Key: Space and Enter on native `<summary>` — both keys activate the `<summary>` and toggle the `open` attribute on its `<details>` parent; the browser bakes this interaction in.
 
 ## Screen Reader & AT Behaviour
 
@@ -269,16 +310,18 @@
 - AT: Screen-reader instructions — when a screen reader encounters an element that invites interaction beyond reading, it typically provides instructions on how to interact with it based on the announced role.
 - AT: Custom-key gap — if a custom widget uses non-standard key combinations, the screen reader will not surface those keys to the user.
 - AT: Children Presentational — when an ARIA role's "Children Presentational" property is true (e.g., for the `button` role), browsers treat all descendants as if they had `role="presentation"`, suppressing their semantics in the accessibility tree.
-- AT: `aria-controls` exposure — most screen readers no longer expose the `aria-controls` relationship to users.
+- AT: `aria-controls` exposure — effectively only JAWS exposes the `aria-controls` relationship to users, and even that support is poor; treat the attribute as optional.
 - AT: ARIA support varies — ARIA support and behaviour varies between platforms, accessibility APIs, browsers, and assistive technologies; some parts may be fully supported, partially supported, or buggy. There is no feature-detection for ARIA — test with multiple browser/AT combinations.
 - AT: `aria-hidden="true"` on a focusable element — the element is removed from the accessibility tree and not announced by screen readers, but it remains in the DOM and tab order; pressing Tab still moves focus to it, so the user focuses on "nothing".
 - AT: `role="presentation"` on a link — suppresses the link's role in the accessibility tree; screen readers do not announce that it is a link when focused, but they still announce its text content.
 - AT: ARIA does not affect the DOM or visual styles — adding an interactive role (e.g., `role="button"`) does not make the element interactive, focusable, or visually styled like a button; it only changes how the element is exposed in the accessibility tree.
+- AT: Computed role and AAPI mappings — the role a browser exposes to assistive technologies is the "computed role" determined per the HTML Accessibility API Mappings (AAPI), and can depend on context (e.g., `<summary>` only gets a meaningful role when it is the first child of `<details>`); cross-platform announcement differences usually trace back to these mappings, not to bugs.
 
 ## Tools
 
 - Tool: WebAIM WAVE browser extension — evaluates web content for accessibility issues directly within the browser; the Structure tab provides a structural representation of the page including all landmarks and the heading structure within each landmark.
 - Tool: a11ysupport.io — high-level overview of ARIA attributes and their expected support across browser/screen-reader combinations; the tests may not always be up-to-date, so always perform your own testing.
+- Tool: JAWS — Windows screen reader; effectively the only screen reader that currently exposes the `aria-controls` relationship to users (and even that support is poor, per Heydon Pickering's "aria-controls is poop").
 
 ## Glossary
 
@@ -296,3 +339,10 @@
 - Term: Children Presentational — a property of certain ARIA roles; when true, browsers treat all descendants as if they had `role="presentation"`, suppressing their semantics in the accessibility tree.
 - Term: Redundant ARIA — explicitly adding ARIA roles, states, or properties to an element that already maps to those semantics implicitly via HTML; wasted effort and a sync liability when state attributes diverge from their HTML counterparts.
 - Term: ARIA polyfill — using ARIA as a last-resort gap-filler for missing or insufficient HTML semantics, not as a default authoring tool.
+- Term: Disclosure — the act of disclosing or revealing something that is otherwise hidden.
+- Term: Disclosure widget — an interactive control whose sole purpose is to reveal and hide content; typically a button that toggles a content panel.
+- Term: Trigger (disclosure) — the button portion of a disclosure widget — the element the user activates to toggle visibility.
+- Term: Panel / Content panel (disclosure) — the content (or container of content) that the disclosure trigger reveals and hides.
+- Term: Progressive Enhancement — a design and development approach that ensures a usable minimum user experience by starting with a working static version and enhancing it with JavaScript, so the content remains accessible if the script fails to load or run.
+- Term: AAPI — Accessibility API; the platform-level API a browser exposes accessibility information to; the HTML AAPI Mappings define which role browsers expose for each HTML element.
+- Term: Computed role — the role the browser actually determines for an element based on context and AAPI mappings (e.g., `<summary>` gets a meaningful role only when it is the first child of `<details>`); may differ from the implicit role listed in ARIA-in-HTML.

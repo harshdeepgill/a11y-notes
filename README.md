@@ -3,26 +3,34 @@
 - Rule: Accessibility information in the accessibility tree is shaped by HTML semantics, applied styles, and any ARIA attributes used.
 - Rule: There should be only one H1 per page.
 - Rule: A landmark region is a recognisable key area of a page that helps users orient themselves and navigate.
+- Rule: Landmark regions are primarily useful for screen reader users, but also benefit keyboard users who use browser extensions that enable landmark navigation via keyboard or a pop-up menu.
+- Rule: Every screen reader provides at least one command or gesture for navigating between landmarks, and per WebAIM's 9th screen reader user survey more than 25% of screen reader users use landmarks very often.
 - Rule: Identifying landmarks is required to conform to WCAG SC 1.3.1 (Info and Relationships) and SC 2.4.1 (Bypass Blocks).
 - Rule: There are eight landmark regions defined by eight ARIA roles, each with an HTML element that implicitly maps to that role.
-- Rule: Use `<header>` for the banner landmark; it is only exposed as a banner when it is a direct child of `<body>`, not when nested in another sectioning element.
-- Rule: Aim for only one banner landmark per site.
+- Rule: Use `<header>` for the banner landmark; it is only exposed as a banner when it is a direct child of `<body>`, not when nested in another sectioning element such as `<article>` or `<section>`.
+- Rule: Aim for only one banner landmark per site, and keep page-specific content out of it — the banner is for global, site-oriented content like the company logo, main site navigation, user login links, and a global search component.
 - Rule: Use `<nav>` for navigation landmarks; multiple navigation landmarks per page are allowed.
 - Rule: When using more than one navigation landmark, give each an accessible name via `aria-label` or `aria-labelledby`.
 - Rule: Use `<main>` as a direct child of `<body>`, with only one main landmark per page.
 - Rule: Use `<footer>` for the contentinfo landmark; it is only mapped to contentinfo when scoped directly to `<body>`.
 - Rule: Explicit `role="contentinfo"` on `<footer>` is no longer required in modern browsers (post-Safari 13).
 - Rule: Use `<aside>` for the complementary landmark; it should be a sibling or child of the main landmark.
+- Rule: Complementary content should be related to the main content but also easily understood without it; content that does not fit this description belongs in another landmark type.
+- Rule: As good practice, label an `<aside>` with a descriptive heading and expose it as the name via `aria-labelledby`.
 - Rule: When more than one complementary landmark exists, label each with a descriptive heading via `aria-labelledby`.
 - Rule: Use `<form>` for the form landmark; it is only exposed as a form landmark when it has an accessible name.
 - Rule: Do not expose a form as a landmark when the form is the page's primary content.
 - Rule: Use the HTML `<search>` element for the search landmark instead of the legacy `role="search"` on a `<form>` or `<div>`.
-- Rule: Multiple search landmarks are allowed; give each an accessible name.
+- Rule: Search is a separate landmark from form because it lets users find content on a site without navigating the site's structure.
+- Rule: Multiple search landmarks are allowed; give each an accessible name (via heading + `aria-labelledby`, `aria-label`, `title`, or a hidden label referenced by `aria-labelledby`).
 - Rule: Use `<section>` with an accessible name (preferred), or apply `role="region"` to another element such as `<div>`, to expose a generic region landmark.
-- Rule: A generic region must have an accessible name to be surfaced as a landmark.
+- Rule: A generic region must have an accessible name to be surfaced as a landmark, preferably referencing a visible heading via `aria-labelledby`.
+- Rule: `<section>` does not affect the document outline, but its implicit region role is exposed as a landmark when it is given an accessible name — making it the preferred element for custom regions.
+- Rule: Reserve the generic region role for content that does not fit any other landmark type.
 - Rule: For existing sites whose markup cannot be changed, apply ARIA role values (banner, navigation, main, contentinfo, complementary, form, search, region) to existing elements like `<div>`.
 - Rule: Let the visual design guide landmark choices so the visual and semantic structure align.
-- Rule: Limit the number of landmarks on a page — too many landmarks reduce navigation efficiency.
+- Rule: Limit the number of landmarks on a page — too many landmarks reduce navigation efficiency and stop the truly important regions from standing out.
+- Rule: Ensure all content on the page is contained within a meaningful landmark region, and use headings for fine-grained navigation within each region.
 - Rule: Verify landmarks and heading structure using WebAIM's WAVE browser extension.
 - Rule: Buttons trigger actions on the page (e.g., submitting forms, opening dialogs, toggling navigation, showing/hiding content).
 - Rule: Buttons and links have different semantics and are not interchangeable.
@@ -51,7 +59,7 @@
 - Rule: On a link enhanced as a button, fire the action on keydown for Enter (keyCode 13) and on keyup for Space (keyCode 32).
 - Rule: Only enhance a link into a button as part of a deliberate progressive-enhancement strategy because of the manual work involved.
 - Rule: Forced Colors modes (e.g., Windows High Contrast Mode) use inherent element semantics rather than the accessibility tree, so an enhanced link-as-button needs styles targeting those modes to appear as a button.
-- Attribute: `role` — ARIA attribute that exposes an element's type in the accessibility tree (e.g., `button`, `link`, `banner`, `navigation`, `main`); changes only the exposed role, not behaviour.
+- Attribute: `role` — ARIA attribute that exposes an element's type in the accessibility tree (e.g., `button`, `link`, `banner`, `navigation`, `main`, `contentinfo`, `complementary`, `form`, `search`, `region`); changes only the exposed role, not behaviour.
 - Attribute: `aria-label` — Provides an accessible name; the attribute's value is used directly as the label.
 - Attribute: `aria-labelledby` — Provides an accessible name by referencing another element (typically a heading) on the page as the label.
 - Attribute: `aria-disabled` — Conveys disabled state to assistive technologies, e.g., `aria-disabled="true"`.
@@ -59,3 +67,5 @@
 - Attribute: `disabled` — HTML attribute that disables form controls including `<button>`; does not apply to links.
 - Attribute: `download` — `<a>` attribute that triggers a file download instead of navigation.
 - Attribute: `tabindex` — Controls focusability and tab order; `tabindex="0"` makes an otherwise non-focusable element focusable.
+- Attribute: `hidden` — Used on an element (e.g., a `<span>`) to create a visually hidden text label that can still be referenced by `aria-labelledby` to name a landmark.
+- Attribute: `title` — Can be used to indicate the purpose of a landmark such as a `<search>` element when no visible label is available.

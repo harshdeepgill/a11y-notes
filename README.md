@@ -2,6 +2,11 @@
 
 - Rule: An element's accessibility information has four parts — role, name, description, and state.
 - Rule: Semantics should provide three main pieces of information — the role of the element (what it is/does), the name (identifies the element and its purpose), and the state (where applicable, the current state of the element).
+- Rule: ARIA roles indicate what an element is, ARIA states indicate the current state of the element, and ARIA properties describe properties of the element (e.g., its name, description, current value, or relationship to other elements).
+- Rule: Semantic HTML is the most powerful accessibility tool; ARIA is the second most powerful.
+- Rule: ARIA supplements HTML semantics — it does not replace HTML and does not change HTML's behaviour.
+- Rule: When an HTML element already has the semantic meaning needed, adding ARIA is redundant and discouraged.
+- Rule: Treat ARIA as a last resort — "spackle, not rebar"; reach for native HTML elements first.
 - Rule: There should be only one H1 per page.
 - Rule: There are eight landmark regions defined by eight ARIA roles, each with an HTML element that implicitly maps to that role.
 - Rule: Identifying landmarks is required to conform to WCAG SC 1.3.1 (Info and Relationships) and SC 2.4.1 (Bypass Blocks).
@@ -41,6 +46,20 @@
 - Rule: Use `aria-current="page"` (not `aria-current="true"`) on a navigation's current-page link so screen readers announce "link, current page".
 - Rule: Use the `aria-current` attribute itself as the CSS styling hook (e.g., `a[aria-current="page"]`) rather than a dedicated `.current` class — the styling only applies when the accessible state is set.
 - Rule: When HTML semantics fall short, supplement accessibility information using ARIA attributes (e.g., state information like indicating the current item within a set).
+- Rule: ARIA is a Web standard (WAI-ARIA) that defines attributes extending HTML to add semantic roles, states, and properties so elements can be better understood by assistive technologies.
+- Rule: ARIA is finite — you cannot make up your own role values or attribute values; only roles and values documented in the ARIA specification are valid.
+- Rule: ARIA roles only affect the accessibility tree; they have no effect on the DOM and do not add interactive behaviour, focusability, or keyboard handling.
+- Rule: Interactive ARIA widget roles (button, checkbox, searchbox, radio, switch, tab, etc.) indicate that elements are supposed to be interactive but do not make them interactive — you must implement focus, keyboard support, and the activation behaviour yourself in JavaScript.
+- Rule: ARIA is a promise — every time you consider using an ARIA attribute, ask what promise you are making to the user and whether you are fulfilling it; "is there an HTML element I can use instead?" — if yes, use that.
+- Rule: Add ARIA states using JavaScript and update them dynamically on user interaction; JavaScript is imperative for accessible custom interactive components.
+- Rule: Without JavaScript to keep them current, ARIA state attributes are useless and can be actively confusing — apply ARIA with a progressive-enhancement mindset.
+- Rule: Before using an ARIA role on an HTML element, check whether that role is permitted on the element via the "ARIA in HTML" specification.
+- Rule: Composite ARIA roles must be used together with their associated roles to compose a UI widget (e.g., `tablist` with `tab` and `tabpanel`).
+- Rule: Provide clear re-use documentation for design-system / pattern-library components that use ARIA so they aren't placed in conflicting contexts.
+- Rule: Keep ARIA use to a minimum — if a component can be built with semantic HTML alone, or simplified to use fewer attributes with robust support, do so.
+- Rule: There is no feature-detection for ARIA support — rely on native semantics as much as possible, use ARIA to the best of your knowledge, and test with various browser/AT combinations.
+- Rule: Six categories of ARIA roles exist — Abstract (not for use in content), Landmark, Document Structure, Widget, Live Region, and Window.
+- Rule: If you use semantic HTML for elements that have native mappings (document-structure and landmark roles), you do not need to also apply their equivalent ARIA roles.
 
 ## HTML Elements
 
@@ -51,14 +70,16 @@
 - Element: `<aside>` — implicit complementary role; should be a sibling or child of the main landmark.
 - Element: `<form>` — only exposed as a form landmark when it has an accessible name.
 - Element: `<search>` — maps to the search landmark role; preferred over legacy `role="search"` on a `<form>` or `<div>`.
-- Element: `<section>` — does not affect the document outline, but its implicit region role is exposed as a landmark when it is given an accessible name — preferred element for custom regions.
-- Element: `<div>` — no implicit landmark role; can be turned into a landmark by adding an explicit ARIA `role` attribute when markup cannot be changed; using `<div>` instead of `<nav>` loses the navigation landmark and (in Safari 16+) also strips list semantics from any list inside it.
-- Element: `<button>` — implicit button role with semantics and behaviour baked in; does nothing on its own except inside a `<form>`, where it may submit the form; focusable by default (no `tabindex="0"` needed); keyboard operable via Space and Enter; can be disabled with the HTML `disabled` attribute.
+- Element: `<section>` — does not affect the document outline, but its implicit region role is exposed as a landmark when it is given an accessible name — preferred element for custom regions; also commonly used with `role="tabpanel"` for tab panels.
+- Element: `<div>` — no implicit landmark role; can be turned into a landmark by adding an explicit ARIA `role` attribute when markup cannot be changed; using `<div>` instead of `<nav>` loses the navigation landmark and (in Safari 16+) also strips list semantics from any list inside it; commonly used with `role="tablist"` since no native HTML element maps to tablist.
+- Element: `<button>` — implicit button role with semantics and behaviour baked in; does nothing on its own except inside a `<form>`, where it may submit the form; focusable by default (no `tabindex="0"` needed); keyboard operable via Space and Enter; can be disabled with the HTML `disabled` attribute; ARIA roles permitted on `<button>` are `checkbox`, `link`, `menuitem`, `menuitemcheckbox`, `menuitemradio`, `option`, `radio`, `switch`, and `tab` — other roles (like `heading`) are not permitted.
 - Element: `<a>` — has an implicit link role only when it has an `href` attribute; without `href` it represents a placeholder for a link, maps to the generic ARIA role, is not exposed in the accessibility tree, and is removed from the tab order (not even focusable in most browsers); when it has `href` it is focusable by default (no `tabindex="0"` needed) and is activated by the Enter key only.
 - Element: `<ul>` — maps to the `list` role; conveys the number and order of items to screen readers; older Safari versions and Safari 16+ outside a navigation landmark remove list semantics when `list-style: none` is applied; can be safeguarded with `role="list"`.
 - Element: `<ol>` — maps to the `list` role; semantically appropriate when order matters (e.g., breadcrumbs); shares the same Safari list-semantics caveats as `<ul>`.
 - Element: `<li>` — list item element used inside `<ul>` or `<ol>`.
 - Element: `<span>` — frequently used with the HTML `hidden` attribute to create a visually-hidden text label referenced from another element via `aria-labelledby`.
+- Element: `<svg>` — can be excluded from the accessibility tree (hidden from screen readers) by adding `aria-hidden="true"` when decorative.
+- Element: `<summary>` — maps to the `button` role and is subject to the same Children Presentational rule that suppresses descendants' semantics.
 
 ## ARIA Roles
 
@@ -70,18 +91,41 @@
 - Role: `form` — landmark for a form; only exposed when the form has an accessible name.
 - Role: `search` — landmark for a collection of elements that together create a search facility (search of the site, of the current page, or an Internet-wide search).
 - Role: `region` — generic landmark for a perceivable section of content important enough that users will likely want to navigate to it and see it listed in a page summary; requires an accessible name.
-- Role: `button` — exposes an element as a button in the accessibility tree; only changes the exposed role, not behaviour.
+- Role: `button` — exposes an element as a button in the accessibility tree; widget role with a Children Presentational property that suppresses descendants' semantics; only changes the exposed role, not behaviour.
 - Role: `link` — exposes an element as a link in the accessibility tree (used to reinstate link semantics after removing `href`).
-- Role: `generic` — what an `<a>` without an `href` maps to; not exposed in the accessibility tree.
+- Role: `generic` — what an `<a>` without an `href` (and a `<div>`/`<span>` by default) maps to; not exposed in the accessibility tree.
 - Role: `list` — implicit role of `<ul>` and `<ol>`; can be re-instated with `role="list"` when CSS strips list semantics.
+- Role: `tablist` — composite widget role that owns child `tab` roles; no native HTML element maps to tablist; used together with `tab` and `tabpanel` to compose a Tabs widget.
+- Role: `tab` — child widget role within a `tablist` that toggles a tab panel; MUST be contained in or owned by an element with `role="tablist"`.
+- Role: `tabpanel` — widget role for the panel content associated with a `tab`.
+- Role: `menu` — composite widget role; expects `menuitem` children.
+- Role: `menubar` — composite widget role; expects `menuitem` children.
+- Role: `menuitem` — widget role that must be a child of an element with `menu` or `menubar` role; may not contain interactive children (no nested `<button>`, no `<a>`, and no elements with implicit button or link roles).
+- Role: `menuitemcheckbox` — widget role; allowed on `<button>`.
+- Role: `menuitemradio` — widget role; allowed on `<button>`.
+- Role: `checkbox` — widget role; allowed on `<button>`.
+- Role: `radio` — widget role; allowed on `<button>`.
+- Role: `option` — widget role; allowed on `<button>`.
+- Role: `switch` — widget role; allowed on `<button>`.
+- Role: `searchbox` — interactive widget role.
+- Role: `heading` — document-structure role; pairs with `aria-level` to indicate heading level; not permitted on `<button>`.
+- Role: `presentation` — suppresses an element's semantics in the accessibility tree; descendants of certain roles are treated as if they had `role="presentation"`.
 
 ## Attributes
 
-- Attribute: `role` — ARIA attribute that exposes an element's type in the accessibility tree (e.g., `button`, `link`, `banner`, `navigation`, `main`, `contentinfo`, `complementary`, `form`, `search`, `region`, `list`); changes only the exposed role, not behaviour.
+- Attribute: `role` — ARIA attribute that exposes an element's type in the accessibility tree (e.g., `button`, `link`, `banner`, `navigation`, `main`, `contentinfo`, `complementary`, `form`, `search`, `region`, `list`, `tablist`, `tab`, `tabpanel`, `menu`, `menubar`, `menuitem`, `presentation`); changes only the exposed role, not behaviour.
 - Attribute: `aria-label` — Provides an accessible name; the attribute's value is used directly as the label.
 - Attribute: `aria-labelledby` — Provides an accessible name by referencing another element (typically a heading or a hidden `<span>`) on the page as the label.
+- Attribute: `aria-describedby` — Property that references one or more elements on the page to provide an accessible description for the element it is used on.
 - Attribute: `aria-disabled` — Conveys disabled state to assistive technologies, e.g., `aria-disabled="true"`.
 - Attribute: `aria-current` — Used on a link to indicate it is the current item in a set; supports values such as `true` and `page` — `page` causes screen readers to announce "link, current page" instead of just "link, current".
+- Attribute: `aria-pressed` — State on a button-like element indicating whether the toggle is currently pressed (`true`) or not (`false`); changes must be managed via JavaScript.
+- Attribute: `aria-expanded` — State indicating whether the thing the control controls is expanded (`true` / "open") or collapsed (`false` / "closed"); update via JavaScript on user interaction.
+- Attribute: `aria-controls` — Property that creates a relationship between the element it is on and the controlled element referenced by id; note: no longer exposed by most screen readers.
+- Attribute: `aria-hidden` — Property; when `true`, the element is excluded from the accessibility tree and hidden from screen readers.
+- Attribute: `aria-valuetext` — Property holding a textual value for an element (e.g., an HTML range slider); should change as the user changes the element's value.
+- Attribute: `aria-valuenow` — Property holding the current numeric value of an element; should change as the user changes the element's value.
+- Attribute: `aria-level` — Property paired with the `heading` role to indicate heading level.
 - Attribute: `href` — Required on `<a>` for it to be a hyperlink; defines the link's destination as a URL or in-page fragment.
 - Attribute: `disabled` — HTML attribute that disables form controls including `<button>`; does not apply to links.
 - Attribute: `download` — `<a>` attribute that triggers a file download instead of navigation.
@@ -93,6 +137,7 @@
 
 - WCAG: SC 1.3.1 Info and Relationships — "Information, structure, and relationships conveyed through presentation can be programmatically determined or are available in text." Using the appropriate semantic elements to identify key areas of the page is required to meet this criterion.
 - WCAG: SC 2.4.1 Bypass Blocks — exists to ensure assistive technology users have a way to bypass repeated content and facilitate page navigation; using proper landmark elements is one way to meet this criterion.
+- WCAG: SC 4.1.2 — referenced as being violated when an ARIA role conflicts with the nature of the element it is applied to (e.g., `role="heading"` on a `<button>`), because the semantic mismatch may prevent users from interacting with the element as announced.
 
 ## Patterns & Recipes
 
@@ -101,12 +146,32 @@
 - Pattern: Label multiple complementary landmarks — give each `<aside>` a descriptive heading and reference it via `aria-labelledby`.
 - Pattern: Create a search landmark — wrap the search controls in `<search>`; give it an accessible name via a heading + `aria-labelledby`, `aria-label`, `title`, or a hidden text label (e.g., a `<span hidden>`) referenced by `aria-labelledby`.
 - Pattern: Create a custom region — wrap content in `<section>` (or use a `<div>` with `role="region"`) and give it an accessible name, preferably referencing a visible heading via `aria-labelledby`.
-- Pattern: Retrofit landmarks onto an existing site — apply ARIA role values (banner, navigation, main, contentinfo, complementary, form, search, region) to existing elements like `<div>` when the markup cannot be changed.
+- Pattern: Retrofit landmarks onto an existing site — apply ARIA role values (banner, navigation, main, contentinfo, complementary, form, search, region) to existing elements like `<div>` when the markup cannot be changed; you can also use heading roles with `aria-level` to fix an inefficient document outline.
 - Pattern: Disable a link — remove its `href` so the browser no longer provides link interactive behaviour; reinstate link semantics with `role="link"`; convey the disabled state to screen readers with `aria-disabled="true"`.
 - Pattern: Enhance a link into a button — override link semantics with `role="button"`; attach a click handler that calls `e.preventDefault()` and triggers the action; implement full button keyboard behaviour by firing on keydown for Enter (keyCode 13) and on keyup for Space (keyCode 32); add styles targeting Forced Colors modes (e.g., Windows High Contrast Mode) so it appears as a button.
 - Pattern: Build an accessible site/breadcrumb navigation — wrap links in `<nav>` and give it an accessible name; group links inside `<ul>` (unordered) or `<ol>` (ordered, for breadcrumbs) with each link in an `<li>`; add `role="list"` to safeguard list semantics when CSS removes default markers; mark the current-page link with `aria-current="page"` and style it via `a[aria-current="page"]`.
 - Pattern: Preserve list semantics across CSS changes — add `role="list"` to the `<ul>` or `<ol>` whenever default list markers are removed (e.g., `list-style: none`) so the list count remains exposed to screen readers.
 - Pattern: Indicate the current page in a navigation — set `aria-current="page"` on the current-page link and reuse it as the CSS styling hook (`a[aria-current="page"]`) so the visual highlight only applies when the accessible state is set.
+- Pattern: Hide decorative content from screen readers — add `aria-hidden="true"` to an element (e.g., a decorative `<svg>`) so it is excluded from the accessibility tree.
+- Pattern: Provide an accessible description — give the descriptive element (e.g., a help paragraph) an `id` and reference it from the described element via `aria-describedby`.
+- Pattern: Polyfill missing semantics — when HTML provides no equivalent element (e.g., a `tablist`), apply the appropriate ARIA role on a generic element such as `<div>` to expose the semantics in the accessibility tree; back the role with JavaScript-driven interactivity since the role itself adds no behaviour.
+
+## Complex Components
+
+- Tabs: Composite structure — uses three ARIA roles together — `tablist` (container), `tab` (each tab control), and `tabpanel` (each panel of content).
+- Tabs: Markup — wrap the set of tabs in an element with `role="tablist"` (no native HTML element maps to tablist); each tab is typically a `<button role="tab">`; each panel is typically a `<section role="tabpanel">`.
+- Tabs: ARIA parent-child constraint — elements with `role="tab"` MUST be contained in or owned by an element with `role="tablist"`; `role="tab"` placed inside a `<nav><ul><li><a>` structure (without tablist) is invalid.
+- Tabs: Behaviour — ARIA roles add no interactive behaviour; tab activation, panel switching, focus, and keyboard support must be implemented in JavaScript.
+- Disclosure: Markup — a control (typically a `<button>`) sits adjacent to or above the panel it toggles.
+- Disclosure: ARIA — set `aria-expanded="false"` on the control when collapsed and `"true"` when expanded; optionally use `aria-controls` to reference the controlled element's id (note: no longer exposed by most screen readers).
+- Disclosure: State management — JavaScript must update `aria-expanded` on user interaction; without JavaScript the value is stale and can confuse screen-reader users.
+- Toggle button: ARIA — use `<button aria-pressed="true|false">` to indicate whether the toggle is on or off.
+- Toggle button: State management — JavaScript must flip `aria-pressed` when the user activates the button.
+- Menu / Menubar: Structure — `role="menu"` or `role="menubar"` for the container with `role="menuitem"` children.
+- Menu / Menubar: Children constraint — `menuitem` may not contain interactive children (no nested `<button>`, no `<a>`, no elements with implicit button/link roles).
+- Carousel: No native ARIA role — `role="carousel"` is invalid because ARIA is finite; the spec includes no carousel role.
+- Breadcrumb: No native ARIA role — `role="breadcrumb"` is invalid; use `<nav aria-label="Breadcrumb">` so screen readers announce "Breadcrumb, Navigation" — role + name communicate everything that's needed.
+- Modal dialog: ARIA category — modal dialogs fall under the "Window roles" category of ARIA roles, which describe windows within the browser.
 
 ## Anti-Patterns
 
@@ -115,6 +180,15 @@
 - Anti-pattern: Using `href="#"` (a meaningless `href`) on an `<a>` — a signal you should be using a button instead.
 - Anti-pattern: Including the word "navigation" in a navigation's accessible name — screen readers end up announcing "Navigation" twice (once for the landmark role and once for the label).
 - Anti-pattern: Using `<div>` to create a navigation instead of `<nav>` — loses the navigation landmark and (in Safari 16+) also strips list semantics from any list inside it.
+- Anti-pattern: Adding ARIA when the HTML element already provides the semantics — redundant and discouraged; can introduce confusion or break behaviour.
+- Anti-pattern: Using `role="heading"` on a `<button>` — the `heading` role is not permitted on `<button>`; the semantic-vs-functional mismatch creates usability problems and violates WCAG SC 4.1.2.
+- Anti-pattern: Making up ARIA roles — invented roles like `role="carousel"` or `role="breadcrumb"` are invalid because ARIA is finite.
+- Anti-pattern: Placing semantic descendants (e.g., an `<h3>`) inside `<button>`, `<summary>`, or `<div role="button">` — the button role's Children Presentational property suppresses descendants' semantics in the accessibility tree.
+- Anti-pattern: Applying an interactive ARIA role without implementing the corresponding behaviour — you make a promise to screen-reader users you don't fulfil, creating a usability barrier.
+- Anti-pattern: Adding ARIA state attributes without JavaScript to keep them in sync — stale state attributes are useless and can be actively confusing.
+- Anti-pattern: Using key combinations users are unfamiliar with on a custom widget — screen readers won't announce them so users can't discover how to operate the widget.
+- Anti-pattern: Expecting ARIA to change how Forced Colors / WHCM renders an element — WHCM uses inherent HTML semantics, not the accessibility tree, so a `<div role="button">` will render as plain text in WHCM regardless of ARIA.
+- Anti-pattern: Using `role="tab"` outside a `tablist` — invalid markup; tab's parent must have `role="tablist"`.
 
 ## Decision Rules
 
@@ -125,7 +199,8 @@
 - Decision: Generic region vs specific landmark — reserve the generic region role for content that does not fit any other landmark type; prefer the specific HTML landmark element when one fits.
 - Decision: `<ul>` vs `<ol>` — use `<ul>` when the order of items doesn't matter (e.g., a site navigation); use `<ol>` when order matters (e.g., breadcrumbs).
 - Decision: `aria-current="page"` vs `aria-current="true"` — in navigation, use `page` so screen readers announce "link, current page" instead of just "link, current".
-- Decision: When to reach for ARIA — when HTML semantics fall short (e.g., no native HTML attribute identifies the current element in a set), supplement with ARIA attributes.
+- Decision: When to reach for ARIA — first ask "is there an HTML element I can use instead?"; if yes, use that. Reach for ARIA only when HTML semantics fall short (e.g., to polyfill missing semantics like `tablist`, to override native ones, to convey state like `aria-pressed`, or to fix accessibility in legacy code you can't change).
+- Decision: Custom widget keyboard keys — avoid unfamiliar key combinations because screen readers will not announce them.
 
 ## Keyboard Behaviour
 
@@ -145,15 +220,22 @@
 - AT: `<a>` without `href` — maps to the generic ARIA role, is not exposed in the accessibility tree, and is removed from the tab order.
 - AT: Disabled link announcement — an `<a>` without `href` plus `role="link"` and `aria-disabled="true"` is announced by screen readers as a disabled/dimmed link, while the absence of `href` ensures it cannot be activated.
 - AT: `role` attribute scope — changes only the exposed role in the accessibility tree; does not add behaviour or actually convert the element.
-- AT: Not all ATs use the accessibility tree — Forced Colors modes such as Windows High Contrast Mode use the inherent semantics of the element rather than the accessibility tree, so an enhanced link-as-button needs styles targeting those modes to appear as a button.
+- AT: Not all ATs use the accessibility tree — Forced Colors modes such as Windows High Contrast Mode (now Contrast Themes in Win 11, standardised under `forced-colors` in CSS) use inherent HTML semantics rather than the accessibility tree; a native `<button>` picks up system colors because of its direct mapping, but a `<div role="button">` is treated as plain text — so an enhanced link-as-button or ARIA-button needs styles targeting Forced Colors modes to appear as a button.
 - AT: Link-in-list announcements — when a link sits in a list inside a navigation, screen readers announce the link's position within the list and the total number of items, giving users a sense of how many links the navigation contains.
 - AT: Safari and `list-style: none` — older versions of Safari on macOS remove list semantics (and item count) when default list markers are removed; Safari 16+ preserves list semantics only when the list is contained within a navigation landmark.
 - AT: Link URL announcement — some screen reader users configure their screen reader to announce the URL of a link so they get an idea of where it will take them.
 - AT: Current-page announcement — `aria-current="page"` causes screen readers to announce the link as "link, current page", conveying the same stateful information sighted users get from visual styling.
+- AT: Browser-added interactivity — the browser adds focus and keyboard behaviour to native interactive elements (e.g., `<button>`) but NOT to elements that only have an interactive ARIA role; you must add focus, keyboard handling, and activation behaviour yourself.
+- AT: Screen-reader instructions — when a screen reader encounters an element that invites interaction beyond reading, it typically provides instructions on how to interact with it based on the announced role.
+- AT: Custom-key gap — if a custom widget uses non-standard key combinations, the screen reader will not surface those keys to the user.
+- AT: Children Presentational — when an ARIA role's "Children Presentational" property is true (e.g., for the `button` role), browsers treat all descendants as if they had `role="presentation"`, suppressing their semantics in the accessibility tree.
+- AT: `aria-controls` exposure — most screen readers no longer expose the `aria-controls` relationship to users.
+- AT: ARIA support varies — ARIA support and behaviour varies between platforms, accessibility APIs, browsers, and assistive technologies; some parts may be fully supported, partially supported, or buggy. There is no feature-detection for ARIA — test with multiple browser/AT combinations.
 
 ## Tools
 
 - Tool: WebAIM WAVE browser extension — evaluates web content for accessibility issues directly within the browser; the Structure tab provides a structural representation of the page including all landmarks and the heading structure within each landmark.
+- Tool: a11ysupport.io — high-level overview of ARIA attributes and their expected support across browser/screen-reader combinations; the tests may not always be up-to-date, so always perform your own testing.
 
 ## Glossary
 
@@ -162,3 +244,10 @@
 - Term: Semantics — what an element is, and therefore how it can be used.
 - Term: Hyperlink — per the HTML living standard, an `<a>` element with an `href` attribute that represents a hypertext anchor labelled by its contents.
 - Term: Navigation (component) — a component providing links to specific pages on the website or to sections of content within the same page; helps users determine their current position on the site and go to other locations.
+- Term: WAI-ARIA / ARIA — Web Accessibility Initiative - Accessible Rich Internet Applications; a Web standard defining attributes that extend HTML to add semantic roles, states, and properties so elements can be better understood by assistive technologies.
+- Term: Affordance — the quality or property of an object that defines its possible uses or makes clear how it can or should be used.
+- Term: ARIA role — an attribute that describes what an element is; an indication of how it is meant to be used.
+- Term: ARIA state — an attribute that expresses the current state of an element (e.g., `aria-pressed`, `aria-expanded`, `aria-current`).
+- Term: ARIA property — an attribute that describes a property of an element such as its name, description, current value, or its relationship to other elements; less likely to change throughout an element's lifecycle than a state.
+- Term: Composite role — an ARIA role that must be used in conjunction with other roles to compose one UI widget (e.g., `tablist` with `tab` and `tabpanel`).
+- Term: Children Presentational — a property of certain ARIA roles; when true, browsers treat all descendants as if they had `role="presentation"`, suppressing their semantics in the accessibility tree.

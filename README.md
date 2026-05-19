@@ -129,6 +129,19 @@
 - Rule: An accessible name is short and succinct; an accessible description is longer and provides additional cues about how to use the component (e.g., field requirements, error messages).
 - Rule: Tables, dialogs, and form-field groupings benefit from accessible names — they help users understand purpose and context.
 - Rule: Group related form controls with `<fieldset>` and provide the group's accessible name via `<legend>` — this creates the relationship between fields and identifies the group's purpose.
+- Rule: An element's accessible name can be derived from one of five sources — the element's content, an HTML attribute (e.g., `alt`, `value`, `title`), another element (e.g., `<label>`, `<legend>`, `<caption>`), `aria-labelledby`, or `aria-label`.
+- Rule: CSS pseudo-element content (`::before`, `::after`, `::marker`) is included in an element's accessible-name computation when the name is derived from content — so generated icons/text affect what AT announces.
+- Rule: For CSS-generated decorative non-text content, provide an empty alt via the slash syntax — e.g., `content: "⁕" / "";` — to hide the glyph from screen readers.
+- Rule: For CSS-generated meaningful non-text content, provide descriptive alt via the slash syntax — e.g., `content: "ⓘ" / "Info: ";` — so the icon's meaning is announced.
+- Rule: Don't use CSS to create meaningful content — the meaning disappears when CSS isn't applied (reader modes, slow networks, broken stylesheets); CSS alt-text also isn't rendered if the image fails to load.
+- Rule: Don't place CSS-generated content (with its alt-text) at the START of an element's content — if CSS fails the visible label may no longer match the accessible name, risking an SC 2.5.3 violation.
+- Rule: The `title` attribute is generally NOT a recommended way to provide an accessible name; the only currently unproblematic use case is providing an accessible name to an `<iframe>`.
+- Rule: `aria-labelledby` and `aria-label` override an element's content in the accessible-name computation — if you use them, ensure the value still includes the visible label (per SC 2.5.3) so speech-control users can activate the control.
+- Rule: `aria-label` content is not translated well by automated translation services — they typically overlook ARIA-attribute content; screen-reader users may hear the label in a language different from the page text.
+- Rule: Do not use `aria-label` to provide a description for an element — it replaces the accName and hides the element's purpose; use `aria-describedby` / `aria-description` for descriptions.
+- Rule: `aria-describedby` content is flattened to a string of text and appended after name+role — structured content (lists, links, image role) inside the referenced element loses its semantics in the announcement (only an image's `alt` survives).
+- Rule: `aria-details` doesn't contribute to the accessible description; screen readers announce only the presence of the extended info, never its contents, and they do not move focus to it; use it as a "heads-up" pointer, not as an accDesc.
+- Rule: Prefer `aria-describedby` over `aria-description` when the descriptive text is available in the DOM — so the announced text matches what sighted users see.
 
 ## HTML Elements
 
@@ -160,6 +173,8 @@
 - Element: `<fieldset>` — form-grouping element for related form controls; pairs with `<legend>` (its first child) to expose the group's accessible name; applying `disabled` disables the fieldset and all of its descendant controls; applying `inert` makes the region and its descendants inert (rendered but inaccessible).
 - Element: `<legend>` — supplies the accessible name for its parent `<fieldset>`; helps users understand the purpose of the grouped controls (e.g., "Shipping Address", "Billing Address").
 - Element: Name-prohibited HTML elements — `<caption>`, `<figcaption>`, `<code>`, `<del>`, `<em>`, `<ins>`, `<mark>`, `<p>`, `<strong>`, `<sub>`, `<sup>`, `<dfn>`, `<time>` (and generic `<div>`/`<span>`) all map to roles that disallow an accessible name; `aria-label`/`aria-labelledby` on these elements is invalid.
+- Element: `<caption>` — provides the accessible name for its containing `<table>` (in addition to being a name-prohibited element itself).
+- Element: `<iframe>` — `title` is currently the most reliable method of providing an announced accessible name for an iframe; this is the only unproblematic use case for `title`.
 - Element: `<dialog>` — native HTML dialog element; when used in modal mode, the browser provides built-in inert-outside behaviour, sparing you from DOM-traversal + `aria-hidden` plumbing.
 - Element: `<select>` — form control that can be disabled with the `disabled` attribute (no keyboard focus, no mouse events, no tab key).
 - Element: `<img>` — applying `role="none"`, `aria-hidden="true"`, or `alt=""` to an `<img>` all hide it equivalently from screen readers (suitable for decorative images).
@@ -201,8 +216,8 @@
 ## Attributes
 
 - Attribute: `role` — ARIA attribute that exposes an element's type in the accessibility tree (e.g., `button`, `link`, `banner`, `navigation`, `main`, `contentinfo`, `complementary`, `form`, `search`, `region`, `list`, `group`, `tablist`, `tab`, `tabpanel`, `menu`, `menubar`, `menuitem`, `presentation`); changes only the exposed role, not behaviour.
-- Attribute: `aria-label` — Provides an accessible name; the attribute's value is used directly as the label; recommended only as a last resort — prefer `aria-labelledby` referencing a visible heading or a hidden text node.
-- Attribute: `aria-labelledby` — Provides an accessible name by referencing another element (typically a heading or a hidden `<span>`) on the page as the label.
+- Attribute: `aria-label` — Provides an accessible name as a string value; lower priority than `aria-labelledby` in the accName algorithm but still overrides element content; not translated well by automated translation services (screen-reader users may hear the wrong language); reserve for cases when there is no visible text on the page to reference or tracking `id` values would be too difficult; recommended only as a last resort — prefer `aria-labelledby` referencing a visible heading or a hidden text node.
+- Attribute: `aria-labelledby` — Provides an accessible name by referencing one or more elements (by `id`) on the page as the label; takes the HIGHEST priority in the accName computation algorithm, overriding element content; useful for reusing existing on-page text (e.g., a heading naming a landmark, a search button naming a search input).
 - Attribute: `aria-describedby` — Property that references one or more elements on the page (by `id`) to provide an accessible description for the element it is used on; the description is appended to the element's name and role and presented to the user as a flat string of text — any structured content (lists, links) inside the referenced element loses its semantics when announced. Whether and when the description is announced depends on the browser/AT pairing, the association method, and the user's interaction type; when announced, the description typically follows the name and role.
 - Attribute: `aria-disabled` — Conveys disabled state to assistive technologies, e.g., `aria-disabled="true"`.
 - Attribute: `aria-current` — Used on a link to indicate it is the current item in a set; supports values such as `true` and `page` — `page` causes screen readers to announce "link, current page" instead of just "link, current".
@@ -225,7 +240,11 @@
 - Attribute: `hidden` — HTML attribute that hides an element from rendering and removes it from the accessibility tree; when the hidden element is referenced via `aria-labelledby`, the browser still exposes its text as the accessible name for the referencing element — useful for providing a name without leaving the text node as a separate reading stop for screen readers; pairing `hidden` with `aria-hidden="true"` is redundant. Supports two states — the default (`hidden`) state applies `display: none`, while the "until-found" state (`hidden="until-found"`) keeps the content discoverable to browser find-in-page and fragment navigation by using `content-visibility: hidden` instead of `display: none`; in until-found the element still generates a box, so apply padding/borders/backgrounds to a child container; once revealed via find-in-page the content stays visible (no native way to recollapse); `display: none`, `display: contents`, or `display: inline` on the until-found element prevents reveal. Chromium-only support at the time of the lecture; part of the Interop 2025 project.
 - Attribute: `open` — HTML boolean attribute on `<details>` that the browser toggles when the first `<summary>` is activated; controls whether the disclosure widget's content is visible; the browser also rewrites this attribute in the markup when `name`-based exclusive grouping is enforced.
 - Attribute: `name` — HTML attribute; on `<input type="radio">`, groups radio buttons so only one in the group can be selected at a time; on `<details>`, when the same non-empty value is set on multiple elements, enforces that at most one `<details>` in the group is `open` at a time — the browser updates the `open` attributes in markup as it enforces exclusivity, offloading exclusive-accordion behaviour from JavaScript to the browser.
-- Attribute: `title` — Can be used to indicate the purpose of a landmark such as a `<search>` element when no visible label is available.
+- Attribute: `title` — Discouraged by the HTML spec as a way to provide accessible names — user agents often require a pointing device (mouse) to expose `title` as a tooltip, excluding keyboard-only and touch-only users; can be used to indicate the purpose of a landmark such as a `<search>` element when no visible label is available, but the only currently unproblematic use case is providing an accessible name to an `<iframe>`.
+- Attribute: `alt` — `<img>`'s accessible-name attribute; the alt-text value becomes the image's accessible name; an empty `alt` excludes the image from the accessibility tree (decorative).
+- Attribute: `value` — provides the accessible name for some form controls such as `<input type="submit">` (e.g., `value="Send message"` → accName "Send message").
+- Attribute: `aria-description` (ARIA 1.3) — Provides an accessible description as a string of text (inline), same purpose as `aria-describedby` but without an `id` reference; not currently fully implemented in all browsers; may not translate well (like `aria-label`); prefer `aria-describedby` when the description exists in the DOM.
+- Attribute: `aria-details` — References one or more elements (by `id`) that provide additional information about the element; the SR announces only the PRESENCE of the extended info, never its contents; does NOT contribute to the accDesc computation; does NOT move focus; use it as a "heads-up" pointer to structured/navigable info (e.g., a `<details>` explaining a CVV field) — not as an accDesc.
 - Attribute: `for` — `<label>` attribute referencing an input's `id` to programmatically associate the label with the input and expose its text as the input's accessible name.
 - Attribute: `id` — HTML attribute used to be referenced by `<label for>`, `aria-labelledby`, `aria-describedby`, or `aria-controls` for programmatic association.
 
@@ -236,7 +255,7 @@
 - WCAG: SC 2.1.3 Keyboard (No Exception) (Level AAA) — "All functionality of the content is operable through a keyboard interface without requiring specific timings for individual keystrokes." The stricter, no-exception version of SC 2.1.1.
 - WCAG: SC 2.4.1 Bypass Blocks — exists to ensure assistive technology users have a way to bypass repeated content and facilitate page navigation; using proper landmark elements is one way to meet this criterion.
 - WCAG: SC 4.1.2 Name, Role, Value (Level A) — "For all user interface components (including but not limited to: form elements, links and components generated by scripts), the name and role can be programmatically determined;" — referenced as being violated when an ARIA role conflicts with the nature of the element it is applied to (e.g., `role="heading"` on a `<button>`), because the semantic mismatch may prevent users from interacting with the element as announced.
-- WCAG: SC 2.5.3 Label in Name — "For user interface components with labels that include text or images of text, the name contains the text that is presented visually." When the visible label and accessible name don't match, the name must contain the label so speech-control users and others relying on the visible text can activate the control.
+- WCAG: SC 2.5.3 Label in Name — "For user interface components with labels that include text or images of text, the name contains the text that is presented visually." When the visible label and accessible name don't match, the name must contain the label so speech-control users and others relying on the visible text can activate the control. Risk: CSS-generated content (and its alt-text) placed at the start of an element's content can cause an SC 2.5.3 violation if CSS fails to load and the visible label ends up not matching the accessible name.
 - WCAG: SC 3.3.2 Labels or Instructions (Level A) — "Labels or instructions are provided when content requires user input." All form controls (and widgets) that expect user input are required to have a visible label, plus a description where needed.
 
 ## Patterns & Recipes
@@ -272,6 +291,13 @@
 - Pattern: Allow an accessible name on a generic container — generic `<div>`/`<span>` are name-prohibited; if the container needs a name, first assign it a meaningful role (e.g., `<div role="region" aria-label="…">`) so the role qualifies for an accessible name.
 - Pattern: Accessible name for an icon-only link — include a visually-hidden `<span>` inside the link describing the destination (e.g., `<a href="…"><span class="visually-hidden">Twitter</span><i class="fa-brands fa-twitter"></i></a>`) so AT users can identify it.
 - Pattern: Provide an accessible description — set `aria-describedby` on the described element pointing to the description element's `id` (e.g., `<input … aria-describedby="passw0rd-description"><p id="passw0rd-description">…</p>`).
+- Pattern: CSS alt-text for decorative content — `li::before { content: "⁕" / ""; }` keeps the glyph visual while hiding it from screen readers.
+- Pattern: CSS alt-text for meaningful content — `a.info::before { content: "ⓘ" / "Info: "; }` so the icon's meaning is conveyed to screen readers.
+- Pattern: Provide iframe accessible name — `<iframe src="…" title="…">…</iframe>` (`title` is the most reliable announced-name method for iframes; only unproblematic use case for `title`).
+- Pattern: DRY search input naming — give the search `<button>` an `id` and reference it from the input via `aria-labelledby` so the button's visible label doubles as the input's accessible name (e.g., `<input type="search" aria-labelledby="search-btn"><button id="search-btn">Search</button>`).
+- Pattern: Heading as a landmark's accessible name — give the landmark `aria-labelledby` referencing the on-page heading's `id` (e.g., `<nav aria-labelledby="cats"><h3 id="cats">Categories</h3>…</nav>`); there's no native HTML way to expose a heading as a landmark's accName.
+- Pattern: Provide a "heads-up" to extended info — set `aria-details` on the primary element pointing to the `id` of an element (e.g., a `<details>`) that holds additional structured information; the SR signals presence of the info but doesn't announce its contents.
+- Pattern: Inspect accessible name in DevTools — open the accessibility panel for an element to see the computed name, where it was sourced from, and the full ordered list of naming methods available.
 
 ## Complex Components
 
@@ -444,6 +470,13 @@
 - Anti-pattern: Visible label without programmatic association (e.g., `<span>Username</span><input>`) — sighted users see the label, AT users get no accessible name.
 - Anti-pattern: Icon-only links or buttons without a text alternative — AT users can't identify them; the WebAIM 2022 One Million survey found 50.1% of homepages had empty links and 27.2% had empty buttons.
 - Anti-pattern: Using only an icon-font character as a label — the unicode character supplied by the icon-font stylesheet isn't recognised by AT, so the link/button is treated as empty.
+- Anti-pattern: Using CSS to create meaningful content — disappears in reader modes / when CSS isn't applied; users lose information they need to understand the page.
+- Anti-pattern: Placing CSS-generated content (with its alt-text) at the start of an element's content — if CSS fails the visible label no longer matches the accName; risks an SC 2.5.3 Label in Name violation.
+- Anti-pattern: Using `title` to provide an accessible name on anything other than `<iframe>` — user agents often require a pointing device (mouse) to expose the tooltip; excludes keyboard- and touch-only users.
+- Anti-pattern: Using `aria-label` to provide a description — the accName is replaced; element's purpose is no longer exposed.
+- Anti-pattern: Using `aria-details` to provide an accDesc — `aria-details` doesn't contribute to accDesc; SR announces only its presence, not contents; use `aria-describedby` instead.
+- Anti-pattern: Relying on `aria-label` to be translated — automated translation services overlook ARIA attributes; SR users may hear it in the wrong language.
+- Anti-pattern: Using `aria-label` / `aria-labelledby` to override an element's content with a different label — sighted SR users hear a name mismatching what they see, and speech-control users can't activate the control by speaking its visible name.
 
 ## Decision Rules
 
@@ -473,6 +506,10 @@
 - Decision: `role="presentation"` vs `role="none"` — synonyms; prefer `role="none"` because `presentation` is often confused with `aria-hidden="true"`.
 - Decision: `visually-hidden` vs inclusive form-control hide — use `visually-hidden` for static textual content; use the inclusive hide (input overlaid on its visual replacement with `position: absolute; opacity: 0`) for interactive form controls being visually replaced by an image — the inclusive hide keeps the control reachable by touch.
 - Decision: Accessible name vs accessible description — use a name to identify a component (short, succinct); use a description for longer usage cues such as form-field requirements, hints, or error messages.
+- Decision: Element content vs ARIA naming — prefer providing the accessible name via element content (or a native HTML element like `<label>`) because the visible label and accName match by default, satisfying SC 2.5.3 and supporting speech-control users.
+- Decision: `aria-describedby` vs `aria-description` — prefer `aria-describedby` whenever the descriptive text exists in the DOM (announced text stays in sync with visible content); reserve `aria-description` for when no DOM element holds the description, and use cautiously due to translation issues.
+- Decision: `aria-details` vs `aria-describedby` — use `aria-details` for extended info that has structure/semantics or navigation and should NOT be auto-announced (heads-up only); use `aria-describedby` for short descriptive text that should be appended after name+role.
+- Decision: When to use `aria-labelledby` — when the text you want as the accName already exists elsewhere on the page (a heading, a button, etc.) so you can reference its `id` instead of duplicating the string.
 
 ## Keyboard Behaviour
 
@@ -542,6 +579,11 @@
 - AT: Accessible description announcement — descriptions may or may not be announced; whether they are announced depends on the browser/AT pairing, the association method used, and the user's interaction type.
 - AT: Description placement in announcement — when announced, an accessible description is typically appended after the element's name and role.
 - AT: Description loses structure — the description is presented as a flat string of text; if the referenced element contains lists, links, or other structured content, the semantics are lost when announced.
+- AT: CSS pseudo-element content in accName — browsers include `::before`, `::after`, and `::marker` content in the accessible-name computation when the name is derived from element content; the CSS slash syntax `content: "X" / "alt"` lets you provide alt-text (or an empty string for decorative content).
+- AT: accName priority order — `aria-labelledby` has the HIGHEST priority and overrides element content; `aria-label` is next and also overrides element content; native HTML methods (element content, `<label>`, etc.) come below ARIA in the algorithm.
+- AT: ARIA-attribute translation gap — automated translation services overlook ARIA-attribute content (`aria-label`, `aria-description`); SR users may hear the attribute value in a language different from the rest of the page.
+- AT: `aria-describedby` flattening — referenced content is flattened to a string; lists and links inside lose their semantics in the announcement; image roles are dropped (only `alt` survives).
+- AT: `aria-details` announcement — SR announces only the PRESENCE of the extended info; the contents are not announced, and focus does NOT move to the referenced element.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -569,6 +611,11 @@
 - Tool: Edge / Chrome DevTools accessibility panel — inspect the accessibility tree to verify how content is exposed to screen readers (e.g., confirm an icon button's accessible name is derived from a referenced hidden `<span>`); also surfaces whether an element has an accessible name, what the name is, where it came from, and a list of all naming methods available to the element.
 - Tool: NVDA elements list (Insert+F7) — pulls up a list of all links (and other elements) on the page and explicitly notes which ones are unlabelled.
 - Tool: WebAIM One Million survey — annual audit of the top 1,000,000 websites; 2022 results: 50.1% of homepages had empty links, 27.2% had empty buttons, 46.1% had missing form-input labels — among the top 6 most common a11y issues.
+- Tool: Scott O'Hara's "The Trials and Tribulations of the Title Attribute" (2017) — comprehensive write-up of `title`'s accessibility and usability problems; explains when it does and doesn't work, and why.
+- Tool: Steve Faulkner's "Using the HTML title attribute" — notes that `title` effectively hides content from mobile/tablet, AT, and keyboard-only users.
+- Tool: Adrian Roselli's "aria-label Does Not Translate" — empirical tests across major translation services and browsers showing `aria-label` is not relayed in the user's language.
+- Tool: The "Using ARIA" document — guidance on element-specific support for `aria-label` and `aria-labelledby`, plus best-practice naming recommendations (reserve `aria-label` for cases without visible text or where tracking `id` values would be too difficult).
+- Tool: Adrian Roselli's `aria-describedby` cross-AT documentation — exposure of `aria-describedby` across 8 interaction methods, 7 OSes, and 8 screen readers, with videos and a sample to test.
 - Tool: Accessibility Insights for Windows — desktop application for inspecting how content is exposed in the accessibility tree (used in the lecture to demonstrate that a heading with `role="none"` is reported as plain text vs a heading exposed as a heading).
 - Tool: Android TalkBack — Android touch-screen screen reader that supports "explore by touch" navigation: users drag their finger across the screen to hear what is directly underneath.
 
@@ -607,3 +654,5 @@
 - Term: Accessible description (accDesc) — a longer programmatically-associated string that helps the user understand how to use a component; exposed via the accessibility tree and, when announced, appended after the element's name and role as a flat string of text.
 - Term: Label vs accessible name — the "label" is what is presented visually; the "accessible name" is the string exposed to AT. Per WCAG SC 2.5.3 Label in Name, the two should ideally match, and when they differ the name must contain the visible label.
 - Term: Name-prohibited role — an ARIA role for which the spec disallows an accessible name (caption, code, definition, deletion, emphasis, generic, insertion, mark, paragraph, presentation, strong, subscript, suggestion, superscript, term, time); applies whether the role is implicit or explicit.
+- Term: CSS-generated alt-text (slash syntax) — per CSS Generated Content Module Level 3, `content: "<value>" / "<alt>";` lets authors supply an alternative text for non-text generated content; an empty alt elides decorative content from speech output; meaningful alt explains the icon's purpose.
+- Term: accName computation methods — the five ways to provide an accessible name to an element: (1) the element's content, (2) an HTML attribute (e.g., `alt`, `value`, `title`), (3) another element (e.g., `<label>`, `<legend>`, `<caption>`), (4) `aria-labelledby`, and (5) `aria-label`.

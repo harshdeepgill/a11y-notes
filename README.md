@@ -96,6 +96,21 @@
 - Rule: When using `hidden="until-found"`, audit reset stylesheets for `[hidden] { display: none !important; }` — that declaration overrides find-in-page reveal; replace with `[hidden]:not(:is([hidden="until-found"])) { display: none !important; }` so plain `hidden` keeps strong specificity while until-found still works.
 - Rule: Use `hidden="until-found"` only as a progressive enhancement — ensure the content remains usable in browsers that don't yet support it.
 - Rule: The end markup is key — regardless of the starting semantic skeleton (sections-with-headings, description list, etc.) you progressively enhance from, the final markup should semantically represent a meaningful grouping of accessible disclosure widgets.
+- Rule: Why you are hiding an element determines which technique is most appropriate; the technique you choose determines who, if anyone, will have access to the element.
+- Rule: Before hiding an element, ask — why are you hiding it (UX vs aesthetic), who are you hiding it from, who do you want to expose it to, who benefits from the hidden element, and what type of element is it (interactive vs static text).
+- Rule: Aim for parity between keyboard and screen-reader experiences — if an element is keyboard-accessible, it should also be screen-reader-accessible.
+- Rule: An element that is not visually accessible should not be focusable, unless it is un-hidden when it receives focus; when an element receives keyboard focus it should be clearly visible so users know what they are focusing on.
+- Rule: Avoid hiding interactive/focusable elements using `aria-hidden` — modern browsers (e.g., Chrome) expose focusable elements to assistive technologies even when paired with `tabindex="-1"`, so focus can land on an element that isn't announced.
+- Rule: To re-expose an element previously hidden with `aria-hidden`, remove the attribute altogether — `aria-hidden="false"` is inconsistent across browsers.
+- Rule: `tabindex` cannot make an element non-focusable — only `disabled` or `inert` can.
+- Rule: Test new CSS properties (e.g., `display: contents`, `content-visibility`) across browsers and screen readers before relying on them — implementation gaps may affect accessibility.
+- Rule: Dim or obscure inert content to provide a visual cue that it is not currently accessible to anyone.
+- Rule: Style disabled controls so the browser's default low-contrast grey doesn't compromise visual accessibility; usability-test disabled controls.
+- Rule: Inside a `content-visibility: auto` container, hide descendants from screen readers via HTML or ARIA — CSS hides (`display: none`, `visibility: hidden`) aren't applied while rendering is postponed.
+- Rule: Use the `visually-hidden` utility class only for textual content (and specific link cases like skip links).
+- Rule: Prefer the class name `visually-hidden` over `sr-only` — the content is exposed via accessibility APIs to more than just screen readers.
+- Rule: Prefer `role="none"` over `role="presentation"` — they are synonymous; `none` is less likely to be confused with `aria-hidden="true"`.
+- Rule: Test every hiding choice with a screen reader and a check of the accessibility tree — different browser/AAPI combinations announce differently, and some browsers correct misuse by exposing content that "should" be hidden.
 
 ## HTML Elements
 
@@ -123,6 +138,11 @@
 - Element: `<input type="radio">` — radio button; a group of radio buttons sharing the same `name` attribute becomes mutually exclusive (only one can be selected); browsers expose group size via `aria-setsize` and the focused item's position via `aria-posinset`, so screen readers can announce "radio button, 1 of 3" or similar.
 - Element: `<label>` — programmatically associates with a form control via its `for` attribute matching the control's `id`; the label text becomes the control's accessible name.
 - Element: `<h2>` — visible heading commonly used as the accessible name source for a group or region via `aria-labelledby`.
+- Element: `<fieldset>` — form-grouping element; applying `disabled` disables the fieldset and all of its descendant controls; applying `inert` makes the region and its descendants inert (rendered but inaccessible).
+- Element: `<dialog>` — native HTML dialog element; when used in modal mode, the browser provides built-in inert-outside behaviour, sparing you from DOM-traversal + `aria-hidden` plumbing.
+- Element: `<select>` — form control that can be disabled with the `disabled` attribute (no keyboard focus, no mouse events, no tab key).
+- Element: `<img>` — applying `role="none"`, `aria-hidden="true"`, or `alt=""` to an `<img>` all hide it equivalently from screen readers (suitable for decorative images).
+- Element: `<table>` — applying `role="none"` suppresses the table's own role AND the semantics of its required children (`<tr>`, `<td>`, etc.) because those children are required and semantically tied; useful for layout tables in legacy codebases.
 
 ## ARIA Roles
 
@@ -153,7 +173,8 @@
 - Role: `switch` — widget role; allowed on `<button>`.
 - Role: `searchbox` — interactive widget role.
 - Role: `heading` — document-structure role; pairs with `aria-level` to indicate heading level; not permitted on `<button>`.
-- Role: `presentation` — suppresses an element's semantics in the accessibility tree; descendants of certain roles are treated as if they had `role="presentation"`; on a focusable element (e.g., a link), screen readers no longer announce the role but still announce the element's contents.
+- Role: `presentation` — suppresses an element's implicit semantics in the accessibility tree; the element no longer maps to its native role UNLESS the element is focusable (natively or via `tabindex`) OR it has a global ARIA state/property (e.g., `aria-label`); descendants of certain roles are treated as if they had `role="presentation"`; on a focusable element (e.g., a link), screen readers no longer announce the role but still announce the element's contents. ARIA 1.1 introduced `role="none"` as a synonym — `presentation` is often confused with `aria-hidden="true"`; prefer `role="none"`.
+- Role: `none` — synonym of `presentation`; preferred wording because it is less likely to be misread as "hide this element"; same suppression rules and exceptions apply.
 
 ## Attributes
 
@@ -166,7 +187,7 @@
 - Attribute: `aria-pressed` — State on a button-like element indicating whether the toggle is currently pressed (`true`) or not (`false`); changes must be managed via JavaScript.
 - Attribute: `aria-expanded` — State indicating whether the element, or another grouping element it controls, is currently expanded (`true`) or collapsed (`false`); when used on a `<button>`, also communicates that the control is a disclosure button controlling the visibility of something; update via JavaScript on user interaction.
 - Attribute: `aria-controls` — Property that identifies the element(s) whose contents or presence are controlled by the current element, via the controlled element's `id`; optional and effectively only supported by JAWS (poorly) — most screen readers no longer expose this relationship.
-- Attribute: `aria-hidden` — Property; when `true`, the element is excluded from the accessibility tree and hidden from screen readers — but it remains in the DOM and tab order, so applying it to a focusable element or an ancestor of one results in users focusing on "nothing"; commonly used to hide decorative SVG icons (e.g., a disclosure state marker).
+- Attribute: `aria-hidden` — Property that determines whether the element is included in the accessibility tree; when `true`, the element is excluded from the tree and hidden from screen readers — but it remains in the DOM and tab order, so applying it to a focusable element or an ancestor of one results in users focusing on "nothing"; modern browsers (e.g., Chrome) inconsistently still expose focusable elements even with `aria-hidden="true"` + `tabindex="-1"`. Setting `aria-hidden` with no value is equivalent to not setting it at all — the browser ignores it and determines visibility from other factors. `aria-hidden="false"` should re-expose the element but cross-browser support is inconsistent — to re-expose, remove the attribute entirely. Commonly used to hide decorative content (e.g., an SVG icon next to an equivalent text label).
 - Attribute: `aria-valuetext` — Property holding a textual value for an element (e.g., an HTML range slider); should change as the user changes the element's value.
 - Attribute: `aria-valuenow` — Property holding the current numeric value of an element; should change as the user changes the element's value.
 - Attribute: `aria-level` — Property paired with the `heading` role to indicate heading level.
@@ -174,10 +195,11 @@
 - Attribute: `aria-setsize` — ARIA property exposing the total number of items in a set (e.g., a `name`-grouped radio button group); auto-set by browsers for grouped radio buttons today and expected to be auto-set for `name`-grouped `<details>` in the future.
 - Attribute: `aria-posinset` — ARIA property exposing an item's position within its set; auto-set by browsers for `name`-grouped radio buttons today and expected for `name`-grouped `<details>` in the future.
 - Attribute: `href` — Required on `<a>` for it to be a hyperlink; defines the link's destination as a URL or in-page fragment.
-- Attribute: `disabled` — HTML attribute that disables form controls including `<button>`; does not apply to links.
+- Attribute: `disabled` — Boolean HTML attribute that disables an interactive element — typically a form control such as `<button>`, `<input>`, `<select>`, or `<fieldset>` (cascades to all descendants); any value (or no value) disables the element because `disabled` is boolean. When set, the element no longer receives keyboard focus or mouse events and is removed from the tab order; it remains in the accessibility tree and screen readers announce the disabled state. Does not apply to links. Browsers often render disabled controls in low-contrast grey — author styles must restore visual accessibility.
 - Attribute: `required` — HTML boolean attribute on form controls; native equivalent of `aria-required="true"`; prefer it over the ARIA equivalent.
 - Attribute: `download` — `<a>` attribute that triggers a file download instead of navigation.
-- Attribute: `tabindex` — Controls focusability and tab order; `tabindex="0"` makes an otherwise non-focusable element focusable.
+- Attribute: `tabindex` — Controls focusability and tab order; `tabindex="0"` makes an otherwise non-focusable element focusable; a negative integer (e.g., `tabindex="-1"`) on an interactive element removes it from the page's tabbing order while keeping it focusable programmatically and via mouse; cannot be used to make an element non-focusable — only `disabled` or `inert` can.
+- Attribute: `inert` — Boolean HTML attribute on a region; the region and all descendants are visually rendered but are NOT exposed to accessibility APIs, are completely non-interactive (not keyboard-accessible), and are not targeted by any user-interaction events (mouse, touch included). Useful for the page content outside a custom modal dialog so that no interaction happens behind the backdrop. The `<dialog>` element provides this behaviour for free when used in modal mode.
 - Attribute: `hidden` — HTML attribute that hides an element from rendering and removes it from the accessibility tree; when the hidden element is referenced via `aria-labelledby`, the browser still exposes its text as the accessible name for the referencing element — useful for providing a name without leaving the text node as a separate reading stop for screen readers; pairing `hidden` with `aria-hidden="true"` is redundant. Supports two states — the default (`hidden`) state applies `display: none`, while the "until-found" state (`hidden="until-found"`) keeps the content discoverable to browser find-in-page and fragment navigation by using `content-visibility: hidden` instead of `display: none`; in until-found the element still generates a box, so apply padding/borders/backgrounds to a child container; once revealed via find-in-page the content stays visible (no native way to recollapse); `display: none`, `display: contents`, or `display: inline` on the until-found element prevents reveal. Chromium-only support at the time of the lecture; part of the Interop 2025 project.
 - Attribute: `open` — HTML boolean attribute on `<details>` that the browser toggles when the first `<summary>` is activated; controls whether the disclosure widget's content is visible; the browser also rewrites this attribute in the markup when `name`-based exclusive grouping is enforced.
 - Attribute: `name` — HTML attribute; on `<input type="radio">`, groups radio buttons so only one in the group can be selected at a time; on `<details>`, when the same non-empty value is set on multiple elements, enforces that at most one `<details>` in the group is `open` at a time — the browser updates the `open` attributes in markup as it enforces exclusivity, offloading exclusive-accordion behaviour from JavaScript to the browser.
@@ -214,6 +236,10 @@
 - Pattern: Hidden-label name source — add a `<span hidden id="x">…</span>` and reference it from the named element via `aria-labelledby="x"`; the browser exposes the span text as the accessible name while the screen reader does not encounter the text node again as page content.
 - Pattern: Expose a logical group (no landmark) — wrap related items in `<div role="group">` and give it an accessible name via `aria-labelledby` (preferred — point to a visible or hidden heading/span) or `aria-label` as a last resort; the group is recognised by AT but does not appear in the page outline.
 - Pattern: Expose a logical group as a landmark region — wrap related items in `<section>` with an accessible name via `aria-labelledby` pointing to a visible heading; this puts the group into the page's Landmarks list.
+- Pattern: Build the `visually-hidden` utility class — selector `.visually-hidden:not(:focus):not(:active)` so interactive elements become visible on focus; shrink to a 1×1px box (`width:1px; height:1px`); hide overflow (`overflow: hidden`); clip with `clip-path: inset(50%)` plus `clip: rect(0 0 0 0)` for legacy IE; remove from page flow (`position: absolute`); prevent wrapping for proper announcement (`white-space: nowrap`).
+- Pattern: Accessible name for an icon-only button — place a `<span hidden id="…">Menu</span>` inside the `<button>` and reference it via `aria-labelledby="…"` on the button; the browser exposes the hidden text as the button's accessible name (verifiable via Chrome/Edge DevTools accessibility panel).
+- Pattern: Inert background behind a custom modal dialog — apply the `inert` attribute to the page content outside the dialog so it is rendered but inaccessible (no AAPI, no tab focus, no events); dim/obscure those regions visually. The native `<dialog>` element handles this for you when used in modal mode.
+- Pattern: Remove layout-table semantics — apply `role="none"` to a `<table>` used purely for layout; the suppression cascades to required descendants (`<tr>`, `<td>`, etc.) so the entire table becomes presentation-only in the accessibility tree.
 
 ## Complex Components
 
@@ -358,6 +384,13 @@
 - Anti-pattern: Placing `<summary>` inside its heading (`<h3><summary>…</summary></h3>`) — `<summary>` is no longer the first direct child of `<details>` and stops being the disclosure's trigger.
 - Anti-pattern: Hiding accordion panels with plain `hidden` or `display: none` when find-in-page discoverability is wanted — the content becomes unsearchable and unreachable via fragment navigation; use `hidden="until-found"` as a progressive enhancement instead.
 - Anti-pattern: Applying padding/borders/backgrounds directly to an element in the `hidden="until-found"` state — the element still generates a box (under `content-visibility: hidden`), so these styles render unexpectedly; move them to a child container.
+- Anti-pattern: Hiding an interactive element by moving it off-screen via absolute positioning without un-hiding on focus — the element remains in the tab order, so keyboard users can focus an element they cannot see; a WCAG violation.
+- Anti-pattern: `aria-hidden="true"` on a focusable element (even with `tabindex="-1"`) — modern browsers (e.g., Chrome) still expose them; focus may land on an unannounced element.
+- Anti-pattern: `aria-hidden="false"` to re-expose a previously hidden element — support is inconsistent across browsers; remove the attribute entirely.
+- Anti-pattern: Hiding descendants of a `content-visibility: auto` container with `display: none` / `visibility: hidden` to keep them out of screen readers — those styles aren't applied while rendering is postponed, so screen readers may still find them; hide them via HTML or ARIA instead.
+- Anti-pattern: Disabling a control without restoring visual contrast — the default low-contrast grey can be hard for low-vision users to discern.
+- Anti-pattern: Using `tabindex` to make an element non-focusable — only `disabled` or `inert` actually does that; `tabindex` only changes the tab order.
+- Anti-pattern: Using `display: contents` on elements with meaningful semantics — early browser implementations stripped semantics; limit usage to elements without meaningful semantics (e.g., `<div>`) until target browsers behave per spec.
 
 ## Decision Rules
 
@@ -379,6 +412,12 @@
 - Decision: Exclusive vs non-exclusive accordion — let usability testing with disabled and AT users decide; default to non-exclusive when in doubt because it is more inclusive.
 - Decision: Heading inside `<summary>` vs heading wrapping `<button>` — prefer the custom (heading-wraps-button) markup when your users may be on AT pairings that don't expose headings in `<summary>` (e.g., JAWS prior to 2024, or JAWS + Firefox); `<details>` + heading-inside-`<summary>` is acceptable only when all target AT pairings reliably expose those headings.
 - Decision: `hidden` vs `hidden="until-found"` — use `hidden="until-found"` when the content benefits from being discoverable via browser find-in-page and fragment navigation; use plain `hidden`, `display: none`, or `visibility: hidden` when full hiding from all access channels is desired.
+- Decision: Which hiding technique to use — start from why (UX vs aesthetic), who you're hiding from, who you want to expose to, who benefits, and what type of element it is (interactive/focusable vs static text); the answers narrow the technique.
+- Decision: `aria-hidden` vs `role="none"` — `aria-hidden="true"` removes the element AND its children from the accessibility tree; `role="none"` only suppresses the element's own role (and required or semantically-tied descendants), leaving other children's semantics intact.
+- Decision: `inert` vs `hidden` — `hidden` removes the element's display entirely; `inert` keeps the element rendered but blocks all interaction, keyboard tabbing, mouse/touch events, and screen-reader access.
+- Decision: `inert` vs `disabled` — both remove the element from the tab order; `inert` hides it from screen readers entirely (no AAPI exposure); `disabled` keeps it in the accessibility tree with the disabled state announced.
+- Decision: `sr-only` vs `visually-hidden` class name — prefer `visually-hidden` because accessibility APIs expose the content to more than just screen readers.
+- Decision: `role="presentation"` vs `role="none"` — synonyms; prefer `role="none"` because `presentation` is often confused with `aria-hidden="true"`.
 
 ## Keyboard Behaviour
 
@@ -390,6 +429,7 @@
 - Key: Enter on a link-enhanced-as-button — fire the action on keydown (keyCode 13).
 - Key: Space on a link-enhanced-as-button — fire the action on keyup (keyCode 32).
 - Key: Space and Enter on native `<summary>` — both keys activate the `<summary>` and toggle the `open` attribute on its `<details>` parent; the browser bakes this interaction in.
+- Key: Tab with `tabindex="-1"` on an interactive element — element is removed from the tab order; user cannot reach it via Tab, but it remains focusable programmatically and by mouse.
 
 ## Screen Reader & AT Behaviour
 
@@ -424,6 +464,23 @@
 - AT: Narrator + headings in `<summary>` — Narrator paired with Chromium Edge exposes the presence of headings inside `<summary>`.
 - AT: JAWS + headings in `<summary>` — JAWS 2024 announces a heading inside `<summary>` when paired with Chromium browsers, but currently does not when paired with Firefox; older JAWS versions don't expose them anywhere with any browser. Many AT users intentionally don't upgrade their software (per Eric Bailey's "truths about digital accessibility"), so pre-2024 JAWS users would miss those headings.
 - AT: Custom heading-wraps-button — placing the `<button>` of a custom disclosure inside its heading exposes the heading's semantics consistently across all current browser/screen-reader pairings, regardless of AT version.
+- AT: `opacity: 0` / `filter: opacity(0)` — element is visually transparent but semantics and accessibility info are unaffected; remains screen-reader- and keyboard-accessible, and still takes layout space.
+- AT: `clip-path: inset(100%)` — visually clips the element out of view but does not affect semantics; element remains screen-reader- and keyboard-accessible and still takes layout space.
+- AT: Off-screen `position: absolute` — moving an element out of the viewport doesn't remove it from the DOM or accessibility trees; the element remains in the tab order and is screen-reader-announced.
+- AT: `visibility: hidden` — element is removed from the accessibility tree (inaccessible to all users), but still reserves its normal layout space.
+- AT: `display: none` — element is removed from layout AND the accessibility tree; equivalent to the element not existing for any user; descendants are excluded too.
+- AT: `display: contents` — per spec, the element generates no box but its children do, and semantics/accessibility are preserved; early browser implementations removed the element from the accessibility tree — mostly fixed now, but use cautiously on elements with meaningful semantics.
+- AT: `content-visibility: auto` — prior to Chromium 90, descendant semantic elements (headings, landmarks) were not exposed to AAPIs; fixed in Chromium 90+. Caveat: while rendering is postponed, CSS hides (`display: none`, `visibility: hidden`) on descendants aren't applied — screen readers can still discover them; hide via HTML/ARIA instead.
+- AT: `hidden` attribute any-value — any value (including `"false"`, `"invalid value"`, or no value at all) hides the element; invalid values default to the hidden state.
+- AT: `disabled` controls — included in the accessibility tree; screen readers announce the disabled state and indicate the user cannot activate or interact.
+- AT: `inert` regions — not exposed to accessibility APIs; non-interactive; not targeted for any user-interaction event (mouse, touch included).
+- AT: `aria-hidden` with no value — the browser ignores the attribute; visibility is determined by other factors.
+- AT: `aria-hidden="false"` — should re-expose the element to AAPIs but cross-browser support is inconsistent; remove the attribute entirely to re-expose.
+- AT: `aria-hidden="true"` on a focusable element — partially/inconsistently hidden; Chrome and other modern browsers still expose them; focus may land on an unannounced element.
+- AT: `role="none"` / `role="presentation"` — suppresses the element's implicit semantics so it no longer maps to its native role UNLESS the element is focusable (natively or via `tabindex`) OR has a global ARIA state/property; does not hide the element's content from screen readers.
+- AT: `role="none"` on a heading — heading text is reported in the accessibility tree as a plain text string with no semantic meaning.
+- AT: `role="none"` on a parent — children's semantics are preserved UNLESS the children are required by the element (e.g., `<td>`, `<tr>` inside `<table>`) or semantically tied (e.g., listitems require a list parent); only in those cases does the child semantics get suppressed too.
+- AT: Hidden text referenced via `aria-labelledby` / `aria-describedby` — by default ATs don't relay hidden information, but the Accessible Name and Description Computation spec lets authors explicitly include hidden text as an accessible name or description; the browser exposes the hidden text accordingly.
 
 ## Tools
 
@@ -431,6 +488,8 @@
 - Tool: a11ysupport.io — high-level overview of ARIA attributes and their expected support across browser/screen-reader combinations; the tests may not always be up-to-date, so always perform your own testing.
 - Tool: JAWS — Windows screen reader; effectively the only screen reader that currently exposes the `aria-controls` relationship to users (and even that support is poor, per Heydon Pickering's "aria-controls is poop").
 - Tool: VoiceOver Web Rotor — macOS VoiceOver feature that provides a list/summary of items on a page, including a Landmarks list; named `<section>` regions appear in this list, but named `role="group"` containers do not.
+- Tool: Edge / Chrome DevTools accessibility panel — inspect the accessibility tree to verify how content is exposed to screen readers (e.g., confirm an icon button's accessible name is derived from a referenced hidden `<span>`).
+- Tool: Accessibility Insights for Windows — desktop application for inspecting how content is exposed in the accessibility tree (used in the lecture to demonstrate that a heading with `role="none"` is reported as plain text vs a heading exposed as a heading).
 
 ## Glossary
 
@@ -458,4 +517,6 @@
 - Term: Accordion — a group of collapsible, related sections of content; at its core, a grouping of disclosure widgets.
 - Term: Exclusive accordion — an accordion in which only one disclosure widget can be open at a time.
 - Term: Exact-exclusive accordion — an accordion where exactly one item is open at all times (zero open not allowed); the open item is "disabled" until another opens; requires JavaScript today; defined in the OpenUI Accordion component explainer.
-- Term: Visually-hidden — a CSS utility (a set of CSS rules typically applied via a `.visually-hidden` class) that hides content visually while keeping it accessible to screen readers.
+- Term: Visually-hidden — a CSS utility (a set of CSS rules typically applied via a `.visually-hidden` class) that hides content visually while keeping it accessible to assistive technologies; preferred over the older name `sr-only` because accessibility APIs expose the content to more than just screen readers.
+- Term: Inert — describes content (marked via the `inert` attribute) that is visually rendered but not exposed to accessibility APIs, completely non-interactive, and not targeted by any user-interaction event; conceptually like replacing the content with a static, non-interactive picture that has no alt text.
+- Term: Icon button — a button containing only an icon and no visible accompanying text; needs a text alternative (e.g., via `aria-labelledby` referencing a hidden `<span>`) so screen-reader users can identify it.

@@ -111,6 +111,15 @@
 - Rule: Prefer the class name `visually-hidden` over `sr-only` — the content is exposed via accessibility APIs to more than just screen readers.
 - Rule: Prefer `role="none"` over `role="presentation"` — they are synonymous; `none` is less likely to be confused with `aria-hidden="true"`.
 - Rule: Test every hiding choice with a screen reader and a check of the accessibility tree — different browser/AAPI combinations announce differently, and some browsers correct misuse by exposing content that "should" be hidden.
+- Rule: Don't use the `visually-hidden` utility class on interactive elements — only static textual content; touch screen-reader users exploring by haptics won't reach a 1px-clipped interactive element.
+- Rule: Don't hide an interactive element by moving it off-canvas (outside the viewport) — touch screen-reader users dragging their finger across the screen won't find it.
+- Rule: When visually replacing a native form control with an image, keep the native control within the viewport in its natural position so touch screen-reader users can locate it via haptics.
+- Rule: Don't shrink a replaced form control to 1px — it becomes very difficult to find by touch.
+- Rule: Hide the visual replacement (e.g., an inline `<svg>`) with `aria-hidden="true"` so the native control remains the source of truth in the accessibility tree.
+- Rule: Place the `<input>` AND its visual replacement (e.g., an inline `<svg>`) inside the control's `<label>` to enlarge the interactive area.
+- Rule: Prefer inline `<svg>` over external/`<img>` when you need CSS access to the SVG's inner shapes, animations, or Forced Colors adaptation.
+- Rule: Render every native state on the visual replacement — checked, unchecked, disabled, focus, hover, and (where applicable) indeterminate.
+- Rule: Optimise custom-styled form controls for Forced Colors modes via a `@media (forced-colors: active)` block.
 
 ## HTML Elements
 
@@ -130,13 +139,14 @@
 - Element: `<ol>` — maps to the `list` role; semantically appropriate when order matters (e.g., breadcrumbs); shares the same Safari list-semantics caveats as `<ul>`.
 - Element: `<li>` — list item element used inside `<ul>` or `<ol>`.
 - Element: `<span>` — frequently used with the HTML `hidden` attribute to create a visually-hidden text label referenced from another element via `aria-labelledby`; when used purely as an `aria-labelledby` target, prefer `hidden` over a visually-hidden CSS class to avoid double announcement.
-- Element: `<svg>` — can be excluded from the accessibility tree (hidden from screen readers) by adding `aria-hidden="true"` when decorative; preferred over CSS pseudo-elements for state-marker icons (e.g., on a disclosure trigger) because it offers more styling control and adapts better to Forced Colors modes.
+- Element: `<svg>` — can be excluded from the accessibility tree (hidden from screen readers) by adding `aria-hidden="true"` when decorative; preferred over CSS pseudo-elements for state-marker icons (e.g., on a disclosure trigger) because it offers more styling control and adapts better to Forced Colors modes. Inline `<svg>` (vs external/`<img>`) is animatable and lets CSS reach the SVG's inner shapes; when placed directly after a form control inside its `<label>`, the SVG can be styled via adjacent-sibling selectors (`input:focus-visible + svg`, `input:disabled + svg`, `input:checked + svg`) to mirror the control's states.
 - Element: `<summary>` — child of `<details>`; has no implicit ARIA role in the ARIA-in-HTML spec but gets a meaningful computed role only when it is the first child of its `<details>` parent (otherwise treated as a generic `<div>`); may be exposed as "Push Button", "Button", "Summary", or "disclosure triangle" depending on platform/browser/AAPI; interactive element with browser-baked keyboard support (operable via Space and Enter); activating it toggles the `open` attribute on its `<details>` parent; comes with implicit expanded/collapsed state exposed to screen readers; subject to the Children Presentational rule.
 - Element: `<details>` — implicit `group` role; native disclosure-widget container; the first `<summary>` child is the trigger and everything after it inside `<details>` is the controlled content; the browser toggles the `open` attribute to show/hide the content; can only have one trigger (extra `<summary>` elements are ignored as triggers); if no `<summary>` is provided, the browser supplies a generic "Details" label; supports a `name` attribute that, when shared across a group of `<details>`, makes them mutually exclusive (at most one open at a time) without JavaScript; Dragon voice software deprioritises `<details>` compared to buttons/links, making them harder for Dragon users to activate.
 - Element: `<p>` — technically usable as the content panel of a disclosure widget; prefer a grouping element when the panel may contain more than a single paragraph.
-- Element: `<input>` — form control; requires an accessible name supplied programmatically via `<label for>` (preferred), `aria-label`, or `aria-labelledby` — visible-only labels (e.g., an adjacent `<span>` with no association) leave the input without an accessible name.
-- Element: `<input type="radio">` — radio button; a group of radio buttons sharing the same `name` attribute becomes mutually exclusive (only one can be selected); browsers expose group size via `aria-setsize` and the focused item's position via `aria-posinset`, so screen readers can announce "radio button, 1 of 3" or similar.
-- Element: `<label>` — programmatically associates with a form control via its `for` attribute matching the control's `id`; the label text becomes the control's accessible name.
+- Element: `<input>` — form control; requires an accessible name supplied programmatically via `<label for>` (preferred), `aria-label`, or `aria-labelledby` — visible-only labels (e.g., an adjacent `<span>` with no association) leave the input without an accessible name. Browsers ship default state styling (checked/selected/disabled) and adjust colors for Forced Colors modes; these styles can be visually replaced by an inline `<svg>` while keeping the native input as the source of truth for assistive tech.
+- Element: `<input type="checkbox">` — checkbox form control with built-in browser state styling for checked, unchecked, disabled, and Forced Colors; can be visually replaced by an inline `<svg aria-hidden="true">` placed after it inside the `<label>`, while the input itself remains interactive and screen-reader-accessible via the inclusive-hide technique (`position: absolute; opacity: 0`).
+- Element: `<input type="radio">` — radio button; a group of radio buttons sharing the same `name` attribute becomes mutually exclusive (only one can be selected); browsers expose group size via `aria-setsize` and the focused item's position via `aria-posinset`, so screen readers can announce "radio button, 1 of 3" or similar. Like checkboxes, ships default checked/disabled/Forced Colors styling and can be visually replaced by an inline `<svg>` using the same inclusive-hide technique.
+- Element: `<label>` — programmatically associates with a form control via its `for` attribute matching the control's `id`; the label text becomes the control's accessible name. Wrapping the `<input>` AND its visual replacement (e.g., an inline `<svg>`) inside the `<label>` enlarges the control's interactive area.
 - Element: `<h2>` — visible heading commonly used as the accessible name source for a group or region via `aria-labelledby`.
 - Element: `<fieldset>` — form-grouping element; applying `disabled` disables the fieldset and all of its descendant controls; applying `inert` makes the region and its descendants inert (rendered but inaccessible).
 - Element: `<dialog>` — native HTML dialog element; when used in modal mode, the browser provides built-in inert-outside behaviour, sparing you from DOM-traversal + `aria-hidden` plumbing.
@@ -240,6 +250,9 @@
 - Pattern: Accessible name for an icon-only button — place a `<span hidden id="…">Menu</span>` inside the `<button>` and reference it via `aria-labelledby="…"` on the button; the browser exposes the hidden text as the button's accessible name (verifiable via Chrome/Edge DevTools accessibility panel).
 - Pattern: Inert background behind a custom modal dialog — apply the `inert` attribute to the page content outside the dialog so it is rendered but inaccessible (no AAPI, no tab focus, no events); dim/obscure those regions visually. The native `<dialog>` element handles this for you when used in modal mode.
 - Pattern: Remove layout-table semantics — apply `role="none"` to a `<table>` used purely for layout; the suppression cascades to required descendants (`<tr>`, `<td>`, etc.) so the entire table becomes presentation-only in the accessibility tree.
+- Pattern: Inclusively hide a native form control replaced by an inline SVG — wrap `<input>` and `<svg aria-hidden="true">` inside the `<label>`; set the label/wrapper to `position: relative`; on the input set `position: absolute; opacity: 0; width: 1em; height: 1em` (relative units recommended; optional `z-index`); style the SVG via `input:focus-visible + svg`, `input:disabled + svg`, `input:checked + svg`; add a `@media (forced-colors: active)` block for Forced Colors adaptation.
+- Pattern: Visible keyboard focus on a visually-replaced form control — target the adjacent SVG with `input[type="checkbox"]:focus-visible + svg { outline: 2px solid …; outline-offset: 4px; }`.
+- Pattern: Animate an SVG-line-drawing checkmark on check — transition `stroke-dashoffset` on `input:checked + svg path` (e.g., `transition: stroke-dashoffset .4s linear; stroke-dashoffset: 0; stroke: currentColor`).
 
 ## Complex Components
 
@@ -291,6 +304,20 @@
 ### Carousel
 
 - ARIA — no native `role="carousel"` exists because ARIA is finite; the spec includes no carousel role.
+
+### Custom-styled form control
+
+- Use case — when CSS alone can't achieve the required visual / animation / Forced Colors adaptation for a native form control (e.g., a checkbox with an animated SVG-line-drawing checkmark).
+- Markup — `<input>` and an inline `<svg aria-hidden="true">` both inside the control's `<label>`; the SVG is placed AFTER the input in the DOM so adjacent-sibling selectors can target it.
+- Hide technique — label/wrapper `position: relative`; input `position: absolute; opacity: 0; width: 1em; height: 1em` (relative units recommended); optional `z-index`. Don't use `visually-hidden`; don't move the input off-canvas; don't shrink to 1px.
+- ARIA — `aria-hidden="true"` on the visual replacement SVG so it isn't announced; the native control remains the source of truth in the accessibility tree.
+- States to render — checked, unchecked, disabled, focus, hover, and (where applicable) indeterminate.
+- State styling — `input[type="checkbox"]:focus-visible + svg { outline: …; outline-offset: … }`, `input[type="checkbox"]:disabled + svg { … }`, `input[type="checkbox"]:checked + svg { … }`; animate via SVG line-drawing (`stroke-dashoffset` transition) if desired.
+- Forced Colors — add a `@media (forced-colors: active)` block that re-paints the SVG background/checkmark so the control stays visible in Windows Contrast Themes etc.
+- Why inline SVG — full CSS control over inner shapes, supports animation, and adapts to Forced Colors more flexibly than an external `<img>`-embedded SVG.
+- Why wrap input + SVG inside `<label>` — enlarges the interactive area of the control.
+- Touch-SR gotcha — `visually-hidden` (1px clip) and off-canvas absolute positioning both make the native control unreachable for users exploring by touch (e.g., Android TalkBack); the inclusive-hide technique keeps the control inside the viewport in its natural position.
+- Generalisation — the technique applies to any interactive form control you want to visually replace with an image (radio buttons, etc.), not just checkboxes.
 
 ### Disclosure
 
@@ -391,6 +418,9 @@
 - Anti-pattern: Disabling a control without restoring visual contrast — the default low-contrast grey can be hard for low-vision users to discern.
 - Anti-pattern: Using `tabindex` to make an element non-focusable — only `disabled` or `inert` actually does that; `tabindex` only changes the tab order.
 - Anti-pattern: Using `display: contents` on elements with meaningful semantics — early browser implementations stripped semantics; limit usage to elements without meaningful semantics (e.g., `<div>`) until target browsers behave per spec.
+- Anti-pattern: Hiding an interactive form control (e.g., a checkbox you're replacing with an SVG) with the `visually-hidden` utility class — mobile screen-reader users exploring by touch won't reach the 1px-clipped control.
+- Anti-pattern: Hiding a replaced form control by moving it off-canvas with absolute positioning — outside the viewport, touch screen-reader users dragging their finger across the screen can't find it.
+- Anti-pattern: Shrinking a replaced form control to 1px — very hard to find by touch, even when within viewport bounds.
 
 ## Decision Rules
 
@@ -418,6 +448,7 @@
 - Decision: `inert` vs `disabled` — both remove the element from the tab order; `inert` hides it from screen readers entirely (no AAPI exposure); `disabled` keeps it in the accessibility tree with the disabled state announced.
 - Decision: `sr-only` vs `visually-hidden` class name — prefer `visually-hidden` because accessibility APIs expose the content to more than just screen readers.
 - Decision: `role="presentation"` vs `role="none"` — synonyms; prefer `role="none"` because `presentation` is often confused with `aria-hidden="true"`.
+- Decision: `visually-hidden` vs inclusive form-control hide — use `visually-hidden` for static textual content; use the inclusive hide (input overlaid on its visual replacement with `position: absolute; opacity: 0`) for interactive form controls being visually replaced by an image — the inclusive hide keeps the control reachable by touch.
 
 ## Keyboard Behaviour
 
@@ -481,6 +512,7 @@
 - AT: `role="none"` on a heading — heading text is reported in the accessibility tree as a plain text string with no semantic meaning.
 - AT: `role="none"` on a parent — children's semantics are preserved UNLESS the children are required by the element (e.g., `<td>`, `<tr>` inside `<table>`) or semantically tied (e.g., listitems require a list parent); only in those cases does the child semantics get suppressed too.
 - AT: Hidden text referenced via `aria-labelledby` / `aria-describedby` — by default ATs don't relay hidden information, but the Accessible Name and Description Computation spec lets authors explicitly include hidden text as an accessible name or description; the browser exposes the hidden text accordingly.
+- AT: Explore by touch on touch screen readers — touch-screen screen readers (e.g., Android TalkBack) let users drag a finger across the screen to hear the element directly underneath; an element hidden off-canvas or shrunk to 1px is unreachable via this navigation mode, even if it remains in the accessibility tree.
 
 ## Tools
 
@@ -490,6 +522,7 @@
 - Tool: VoiceOver Web Rotor — macOS VoiceOver feature that provides a list/summary of items on a page, including a Landmarks list; named `<section>` regions appear in this list, but named `role="group"` containers do not.
 - Tool: Edge / Chrome DevTools accessibility panel — inspect the accessibility tree to verify how content is exposed to screen readers (e.g., confirm an icon button's accessible name is derived from a referenced hidden `<span>`).
 - Tool: Accessibility Insights for Windows — desktop application for inspecting how content is exposed in the accessibility tree (used in the lecture to demonstrate that a heading with `role="none"` is reported as plain text vs a heading exposed as a heading).
+- Tool: Android TalkBack — Android touch-screen screen reader that supports "explore by touch" navigation: users drag their finger across the screen to hear what is directly underneath.
 
 ## Glossary
 
@@ -520,3 +553,5 @@
 - Term: Visually-hidden — a CSS utility (a set of CSS rules typically applied via a `.visually-hidden` class) that hides content visually while keeping it accessible to assistive technologies; preferred over the older name `sr-only` because accessibility APIs expose the content to more than just screen readers.
 - Term: Inert — describes content (marked via the `inert` attribute) that is visually rendered but not exposed to accessibility APIs, completely non-interactive, and not targeted by any user-interaction event; conceptually like replacing the content with a static, non-interactive picture that has no alt text.
 - Term: Icon button — a button containing only an icon and no visible accompanying text; needs a text alternative (e.g., via `aria-labelledby` referencing a hidden `<span>`) so screen-reader users can identify it.
+- Term: Explore by touch — per the Material Design Accessibility Guidelines, "Touch interface screen readers allow users to run their finger over the screen to hear what is directly underneath. This provides the user with a quick sense of an entire interface."
+- Term: Inclusive hide (for form controls) — visually hiding a native form control while keeping it within the viewport in its natural position (via `position: absolute; opacity: 0`, sometimes enlarged with relative width/height) so touch screen-reader users can still find it by haptics.

@@ -1,64 +1,60 @@
-- Rule: WCAG stands for Web Content Accessibility Guidelines.
+## Rules
+
 - Rule: An element's accessibility information has four parts — role, name, description, and state.
-- Rule: Accessibility information in the accessibility tree is shaped by HTML semantics, applied styles, and any ARIA attributes used.
 - Rule: There should be only one H1 per page.
-- Rule: A landmark region is a recognisable key area of a page that helps users orient themselves and navigate.
-- Rule: Landmark regions are primarily useful for screen reader users, but also benefit keyboard users who use browser extensions that enable landmark navigation via keyboard or a pop-up menu.
-- Rule: Every screen reader provides at least one command or gesture for navigating between landmarks, and per WebAIM's 9th screen reader user survey more than 25% of screen reader users use landmarks very often.
-- Rule: Identifying landmarks is required to conform to WCAG SC 1.3.1 (Info and Relationships) and SC 2.4.1 (Bypass Blocks).
 - Rule: There are eight landmark regions defined by eight ARIA roles, each with an HTML element that implicitly maps to that role.
-- Rule: Use `<header>` for the banner landmark; it is only exposed as a banner when it is a direct child of `<body>`, not when nested in another sectioning element such as `<article>` or `<section>`.
+- Rule: Identifying landmarks is required to conform to WCAG SC 1.3.1 (Info and Relationships) and SC 2.4.1 (Bypass Blocks).
 - Rule: Aim for only one banner landmark per site, and keep page-specific content out of it — the banner is for global, site-oriented content like the company logo, main site navigation, user login links, and a global search component.
-- Rule: Use `<nav>` for navigation landmarks; multiple navigation landmarks per page are allowed.
 - Rule: When using more than one navigation landmark, give each an accessible name via `aria-label` or `aria-labelledby`.
-- Rule: Use `<main>` as a direct child of `<body>`, with only one main landmark per page.
-- Rule: Use `<footer>` for the contentinfo landmark; it is only mapped to contentinfo when scoped directly to `<body>`.
 - Rule: Explicit `role="contentinfo"` on `<footer>` is no longer required in modern browsers (post-Safari 13).
-- Rule: Use `<aside>` for the complementary landmark; it should be a sibling or child of the main landmark.
 - Rule: Complementary content should be related to the main content but also easily understood without it; content that does not fit this description belongs in another landmark type.
-- Rule: As good practice, label an `<aside>` with a descriptive heading and expose it as the name via `aria-labelledby`.
 - Rule: When more than one complementary landmark exists, label each with a descriptive heading via `aria-labelledby`.
-- Rule: Use `<form>` for the form landmark; it is only exposed as a form landmark when it has an accessible name.
-- Rule: Do not expose a form as a landmark when the form is the page's primary content.
-- Rule: Use the HTML `<search>` element for the search landmark instead of the legacy `role="search"` on a `<form>` or `<div>`.
 - Rule: Search is a separate landmark from form because it lets users find content on a site without navigating the site's structure.
 - Rule: Multiple search landmarks are allowed; give each an accessible name (via heading + `aria-labelledby`, `aria-label`, `title`, or a hidden label referenced by `aria-labelledby`).
-- Rule: Use `<section>` with an accessible name (preferred), or apply `role="region"` to another element such as `<div>`, to expose a generic region landmark.
 - Rule: A generic region must have an accessible name to be surfaced as a landmark, preferably referencing a visible heading via `aria-labelledby`.
-- Rule: `<section>` does not affect the document outline, but its implicit region role is exposed as a landmark when it is given an accessible name — making it the preferred element for custom regions.
-- Rule: Reserve the generic region role for content that does not fit any other landmark type.
-- Rule: For existing sites whose markup cannot be changed, apply ARIA role values (banner, navigation, main, contentinfo, complementary, form, search, region) to existing elements like `<div>`.
 - Rule: Let the visual design guide landmark choices so the visual and semantic structure align.
 - Rule: Limit the number of landmarks on a page — too many landmarks reduce navigation efficiency and stop the truly important regions from standing out.
 - Rule: Ensure all content on the page is contained within a meaningful landmark region, and use headings for fine-grained navigation within each region.
 - Rule: Verify landmarks and heading structure using WebAIM's WAVE browser extension.
 - Rule: Buttons trigger actions on the page (e.g., submitting forms, opening dialogs, toggling navigation, showing/hiding content).
 - Rule: Buttons and links have different semantics and are not interchangeable.
-- Rule: An HTML `<button>` does nothing on its own except inside a `<form>`, where it may submit the form.
 - Rule: Wire up a button's action via JavaScript or the HTML Invoker Commands API.
-- Rule: A native `<button>` is focusable by default and does not need `tabindex="0"`.
-- Rule: A native `<button>` is keyboard operable via Space and Enter.
 - Rule: Disable a native button using the HTML `disabled` attribute.
-- Rule: Links take users places — that is their core difference from buttons.
 - Rule: Links can also download files (via `download`), open email apps (`mailto:`), or dial phone numbers (`tel:`).
-- Rule: An `<a>` only represents a hyperlink when it has an `href` attribute.
-- Rule: An `<a>` without `href` maps to the generic ARIA role, is not exposed in the accessibility tree, and is removed from the tab order.
-- Rule: Links are focusable by default and do not need `tabindex="0"`.
-- Rule: Links are activated by the Enter key only.
 - Rule: Links cannot be disabled with the HTML `disabled` attribute — that attribute applies only to form controls.
-- Rule: To disable a link, remove its `href`, then reinstate semantics with `role="link"` and convey state with `aria-disabled="true"`.
-- Rule: If a control takes the user to another page or section, use a link.
-- Rule: If a control changes something on the current page (layout, dialog, new view), use a button.
-- Rule: If you cannot right-click an element to open it in a new window, it is probably not a link.
-- Rule: If an element does nothing without JavaScript, it is probably a button.
-- Rule: A meaningless `href` such as `href="#"` is a signal you should be using a button instead.
-- Rule: To enhance a link into a button, override link semantics with `role="button"`, prevent the default link behaviour, trigger an alternative action via JavaScript, and implement full button keyboard behaviour for Enter and Space.
 - Rule: The `role` attribute only changes the exposed role in the accessibility tree; it does not add behaviour or actually convert the element.
-- Rule: Enter on a native button fires on keydown and continues firing while held.
-- Rule: Space on a native button fires on keyup; if Space is held and the user tabs away without releasing, the action will not fire.
-- Rule: On a link enhanced as a button, fire the action on keydown for Enter (keyCode 13) and on keyup for Space (keyCode 32).
 - Rule: Only enhance a link into a button as part of a deliberate progressive-enhancement strategy because of the manual work involved.
-- Rule: Forced Colors modes (e.g., Windows High Contrast Mode) use inherent element semantics rather than the accessibility tree, so an enhanced link-as-button needs styles targeting those modes to appear as a button.
+
+## HTML Elements
+
+- Element: `<header>` — implicit banner role; only exposed as a banner landmark when it is a direct child of `<body>`, not when nested in another sectioning element such as `<article>` or `<section>`.
+- Element: `<nav>` — implicit navigation role; multiple navigation landmarks per page are allowed.
+- Element: `<main>` — implicit main role; should be a direct child of `<body>`, with only one main landmark per page.
+- Element: `<footer>` — implicit contentinfo role only when scoped directly to `<body>`; not exposed as contentinfo when nested in another sectioning element.
+- Element: `<aside>` — implicit complementary role; should be a sibling or child of the main landmark.
+- Element: `<form>` — only exposed as a form landmark when it has an accessible name.
+- Element: `<search>` — maps to the search landmark role; preferred over legacy `role="search"` on a `<form>` or `<div>`.
+- Element: `<section>` — does not affect the document outline, but its implicit region role is exposed as a landmark when it is given an accessible name — preferred element for custom regions.
+- Element: `<div>` — no implicit landmark role; can be turned into a landmark by adding an explicit ARIA `role` attribute when markup cannot be changed.
+- Element: `<button>` — does nothing on its own except inside a `<form>`, where it may submit the form; focusable by default (no `tabindex="0"` needed); keyboard operable via Space and Enter.
+- Element: `<a>` — only represents a hyperlink when it has an `href` attribute; without `href` it maps to the generic ARIA role, is not exposed in the accessibility tree, and is removed from the tab order; when it has `href` it is focusable by default (no `tabindex="0"` needed).
+
+## ARIA Roles
+
+- Role: `banner` — landmark for site-wide header content like the company logo, main site navigation, user login links, and a global search component; ideally only one per site.
+- Role: `navigation` — landmark for a collection of navigational elements (usually links) for navigating within a website.
+- Role: `main` — landmark designating the primary content of the page; only one per page.
+- Role: `contentinfo` — landmark for information about the parent document; typically the page footer with copyright, privacy and accessibility links.
+- Role: `complementary` — landmark for secondary information related to the main content yet understandable without it (e.g., sidebars, call-out boxes, list of related articles).
+- Role: `form` — landmark for a form; only exposed when the form has an accessible name.
+- Role: `search` — landmark for a collection of elements that together create a search facility (search of the site, of the current page, or an Internet-wide search).
+- Role: `region` — generic landmark for a perceivable section of content important enough that users will likely want to navigate to it and see it listed in a page summary; requires an accessible name.
+- Role: `button` — exposes an element as a button in the accessibility tree; only changes the exposed role, not behaviour.
+- Role: `link` — exposes an element as a link in the accessibility tree (used to reinstate link semantics after removing `href`).
+- Role: `generic` — what an `<a>` without an `href` maps to; not exposed in the accessibility tree.
+
+## Attributes
+
 - Attribute: `role` — ARIA attribute that exposes an element's type in the accessibility tree (e.g., `button`, `link`, `banner`, `navigation`, `main`, `contentinfo`, `complementary`, `form`, `search`, `region`); changes only the exposed role, not behaviour.
 - Attribute: `aria-label` — Provides an accessible name; the attribute's value is used directly as the label.
 - Attribute: `aria-labelledby` — Provides an accessible name by referencing another element (typically a heading) on the page as the label.
@@ -69,3 +65,61 @@
 - Attribute: `tabindex` — Controls focusability and tab order; `tabindex="0"` makes an otherwise non-focusable element focusable.
 - Attribute: `hidden` — Used on an element (e.g., a `<span>`) to create a visually hidden text label that can still be referenced by `aria-labelledby` to name a landmark.
 - Attribute: `title` — Can be used to indicate the purpose of a landmark such as a `<search>` element when no visible label is available.
+
+## WCAG Success Criteria
+
+- WCAG: SC 1.3.1 Info and Relationships — "Information, structure, and relationships conveyed through presentation can be programmatically determined or are available in text." Using the appropriate semantic elements to identify key areas of the page is required to meet this criterion.
+- WCAG: SC 2.4.1 Bypass Blocks — exists to ensure assistive technology users have a way to bypass repeated content and facilitate page navigation; using proper landmark elements is one way to meet this criterion.
+
+## Patterns & Recipes
+
+- Pattern: Name a navigation landmark — give the `<nav>` an `aria-label` describing its purpose; or use `aria-labelledby` to reference an on-page heading that describes it.
+- Pattern: Label an `<aside>` — add a descriptive heading inside the `<aside>` and reference it from the `<aside>` via `aria-labelledby`.
+- Pattern: Label multiple complementary landmarks — give each `<aside>` a descriptive heading and reference it via `aria-labelledby`.
+- Pattern: Create a search landmark — wrap the search controls in `<search>`; give it an accessible name via a heading + `aria-labelledby`, `aria-label`, `title`, or a hidden text label (e.g., a `<span hidden>`) referenced by `aria-labelledby`.
+- Pattern: Create a custom region — wrap content in `<section>` (or use a `<div>` with `role="region"`) and give it an accessible name, preferably referencing a visible heading via `aria-labelledby`.
+- Pattern: Retrofit landmarks onto an existing site — apply ARIA role values (banner, navigation, main, contentinfo, complementary, form, search, region) to existing elements like `<div>` when the markup cannot be changed.
+- Pattern: Disable a link — remove its `href`, reinstate link semantics with `role="link"`, and convey state with `aria-disabled="true"`.
+- Pattern: Enhance a link into a button — override link semantics with `role="button"`; prevent the default link behaviour; trigger an alternative action via JavaScript; implement full button keyboard behaviour by firing on keydown for Enter (keyCode 13) and on keyup for Space (keyCode 32); add styles targeting Forced Colors modes (e.g., Windows High Contrast Mode) so it appears as a button.
+
+## Anti-Patterns
+
+- Anti-pattern: Exposing a form as a landmark when the form is the page's primary content — adds unnecessary noise.
+- Anti-pattern: Surfacing too many landmarks on a page — decreases the user's efficiency in finding important areas; truly important regions stop standing out.
+- Anti-pattern: Using `href="#"` (a meaningless `href`) on an `<a>` — a signal you should be using a button instead.
+
+## Decision Rules
+
+- Decision: Button vs link — if a control takes the user to another page or section, use a link; if it changes something on the current page (layout, dialog, new view), use a button.
+- Decision: Links take users places — that is their core difference from buttons.
+- Decision: Is it really a link? — if you cannot right-click an element to open it in a new window, it is probably not a link.
+- Decision: Is it really a button? — if an element does nothing without JavaScript, it is probably a button.
+- Decision: Generic region vs specific landmark — reserve the generic region role for content that does not fit any other landmark type; prefer the specific HTML landmark element when one fits.
+
+## Keyboard Behaviour
+
+- Key: Tab on native `<button>` — focusable by default; no `tabindex="0"` needed.
+- Key: Tab on native `<a>` with `href` — focusable by default; no `tabindex="0"` needed.
+- Key: Enter on native `<button>` — fires on keydown and continues firing while held.
+- Key: Space on native `<button>` — fires on keyup; if Space is held and the user tabs away without releasing, the action will not fire.
+- Key: Enter on native `<a>` — links are activated by the Enter key only.
+- Key: Enter on a link-enhanced-as-button — fire the action on keydown (keyCode 13).
+- Key: Space on a link-enhanced-as-button — fire the action on keyup (keyCode 32).
+
+## Screen Reader & AT Behaviour
+
+- AT: Accessibility tree as the source — accessibility information in the accessibility tree is shaped by HTML semantics, applied styles, and any ARIA attributes used; screen readers get their information about the page from this tree.
+- AT: Landmark navigation availability — every screen reader provides at least one command or gesture for navigating between landmarks; per WebAIM's 9th screen reader user survey more than 25% of screen reader users use landmarks very often.
+- AT: Beneficiaries of landmarks — primarily useful for screen reader users, but also benefit keyboard users who use browser extensions that enable landmark navigation via keyboard or a pop-up menu.
+- AT: `<a>` without `href` — maps to the generic ARIA role, is not exposed in the accessibility tree, and is removed from the tab order.
+- AT: `role` attribute scope — changes only the exposed role in the accessibility tree; does not add behaviour or actually convert the element.
+- AT: Forced Colors modes — modes like Windows High Contrast Mode use inherent element semantics rather than the accessibility tree, so an enhanced link-as-button needs styles targeting those modes to appear as a button.
+
+## Tools
+
+- Tool: WebAIM WAVE browser extension — evaluates web content for accessibility issues directly within the browser; the Structure tab provides a structural representation of the page including all landmarks and the heading structure within each landmark.
+
+## Glossary
+
+- Term: WCAG — Web Content Accessibility Guidelines.
+- Term: Landmark region — a recognisable key area of a page or application that helps users orient themselves on a page and navigate easily to its different areas.

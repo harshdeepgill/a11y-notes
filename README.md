@@ -157,6 +157,15 @@
 - Rule: For an `<iframe>`, use `title` to provide the accName — per Steve Faulkner's tests, `title` is more reliably announced than ARIA naming attributes for iframes.
 - Rule: For link descriptions like "Opens in a new window", include a visually-hidden text node inside the link — `title`/`aria-describedby`/`aria-description` are not consistently announced.
 - Rule: When fixing an existing element's accName without being able to change its markup, reach for a method of HIGHER priority than the existing one (e.g., add `aria-labelledby` when only a visible-but-unassociated `<span>` label exists).
+- Rule: An icon button must be semantically a `<button>` — never an icon, `<img>`, `<svg>`, or `<div>` as the interactive element; AT users must hear the button role.
+- Rule: Prefer inline `<svg>` over icon fonts for icon buttons — SVG is more semantic, flexible, and resilient; icon-font glyphs disappear if the font or CSS fails, leaving an unlabelled button; SVG can also carry its own accName, fonts cannot.
+- Rule: When an icon button has a (visible or visually-hidden) text label, hide the `<svg>` with `aria-hidden="true"` to avoid duplicate announcements.
+- Rule: For an inline `<svg>` to participate in the accName computation of its parent `<button>`, explicitly set `role="img"` on it — not all browsers expose `<svg>` as an image by default.
+- Rule: When naming an `<svg>` via `<title>`, the `<title>` must be the FIRST child of the `<svg>`, AND you should reinforce the association with `aria-labelledby` on the `<svg>` referencing the title's `id` (helps VoiceOver+Safari; VoiceOver+Firefox still misses it).
+- Rule: `aria-label` on the `<svg>` is more robust than `<title>` for surfacing the icon as the parent button's accName across browser/SR pairings.
+- Rule: Don't combine `aria-label` on an icon button with visible text inside it — `aria-label` overrides the content; risks SC 2.5.3 violation and breaks speech-control activation.
+- Rule: Author's go-to icon-button naming method — visually-hidden `<span hidden id="…">…</span>` inside the button referenced via `aria-labelledby` on the button; label survives reader modes and avoids the visually-hidden double-announcement.
+- Rule: Author's overall recommendation for icon buttons — treat the SVG as decorative (`aria-hidden="true"`) and name the button via surrounding markup; SVG-based naming pathways are currently the most fragile.
 
 ## HTML Elements
 
@@ -170,13 +179,13 @@
 - Element: `<section>` — does not affect the document outline, but its implicit region role is exposed as a landmark when it is given an accessible name — preferred element for custom regions; also commonly used with `role="tabpanel"` for tab panels; can serve as a grouping element for a disclosure content panel when stronger semantics or landmark exposure is needed; named `<section>` is the preferred container for an accordion when the accordion's content is important enough to surface as a page landmark.
 - Element: `<article>` — grouping element suitable for a disclosure content panel when its semantics are appropriate.
 - Element: `<div>` — no implicit landmark role; can be turned into a landmark by adding an explicit ARIA `role` attribute when markup cannot be changed; using `<div>` instead of `<nav>` loses the navigation landmark and (in Safari 16+) also strips list semantics from any list inside it; commonly used with `role="tablist"` since no native HTML element maps to tablist; default grouping element for a disclosure content panel; with `role="group"` and an accessible name, becomes a non-landmark logical group (useful for accordion containers that shouldn't appear in the page outline).
-- Element: `<button>` — implicit button role with semantics and behaviour baked in; does nothing on its own except inside a `<form>`, where it may submit the form; focusable by default (no `tabindex="0"` needed); keyboard operable via Space and Enter; can be disabled with the HTML `disabled` attribute; does not come with a built-in way to communicate expanded/collapsed state (use `aria-expanded`); ARIA roles permitted on `<button>` are `checkbox`, `link`, `menuitem`, `menuitemcheckbox`, `menuitemradio`, `option`, `radio`, `switch`, and `tab` — other roles (like `heading`) are not permitted.
+- Element: `<button>` — implicit button role with semantics and behaviour baked in; does nothing on its own except inside a `<form>`, where it may submit the form; focusable by default (no `tabindex="0"` needed); keyboard operable via Space and Enter; can be disabled with the HTML `disabled` attribute; does not come with a built-in way to communicate expanded/collapsed state (use `aria-expanded`); ARIA roles permitted on `<button>` are `checkbox`, `link`, `menuitem`, `menuitemcheckbox`, `menuitemradio`, `option`, `radio`, `switch`, and `tab` — other roles (like `heading`) are not permitted. Icon-button base pattern: a `<button>` wrapping an inline `<svg>`; either hide the SVG with `aria-hidden="true"` and name the button via surrounding markup, OR name the SVG itself (`role="img"` + `aria-label`) so its name becomes the button's accName.
 - Element: `<a>` — has an implicit link role only when it has an `href` attribute; without `href` it represents a placeholder for a link, maps to the generic ARIA role, is not exposed in the accessibility tree, and is removed from the tab order (not even focusable in most browsers); when it has `href` it is focusable by default (no `tabindex="0"` needed) and is activated by the Enter key only.
 - Element: `<ul>` — maps to the `list` role; conveys the number and order of items to screen readers; older Safari versions and Safari 16+ outside a navigation landmark remove list semantics when `list-style: none` is applied; can be safeguarded with `role="list"`.
 - Element: `<ol>` — maps to the `list` role; semantically appropriate when order matters (e.g., breadcrumbs); shares the same Safari list-semantics caveats as `<ul>`.
 - Element: `<li>` — list item element used inside `<ul>` or `<ol>`.
 - Element: `<span>` — frequently used with the HTML `hidden` attribute to create a visually-hidden text label referenced from another element via `aria-labelledby`; when used purely as an `aria-labelledby` target, prefer `hidden` over a visually-hidden CSS class to avoid double announcement.
-- Element: `<svg>` — can be excluded from the accessibility tree (hidden from screen readers) by adding `aria-hidden="true"` when decorative; preferred over CSS pseudo-elements for state-marker icons (e.g., on a disclosure trigger) because it offers more styling control and adapts better to Forced Colors modes. Inline `<svg>` (vs external/`<img>`) is animatable and lets CSS reach the SVG's inner shapes; when placed directly after a form control inside its `<label>`, the SVG can be styled via adjacent-sibling selectors (`input:focus-visible + svg`, `input:disabled + svg`, `input:checked + svg`) to mirror the control's states.
+- Element: `<svg>` — can be excluded from the accessibility tree (hidden from screen readers) by adding `aria-hidden="true"` when decorative; preferred over CSS pseudo-elements for state-marker icons (e.g., on a disclosure trigger) because it offers more styling control and adapts better to Forced Colors modes. Inline `<svg>` (vs external/`<img>`) is animatable and lets CSS reach the SVG's inner shapes; when placed directly after a form control inside its `<label>`, the SVG can be styled via adjacent-sibling selectors (`input:focus-visible + svg`, `input:disabled + svg`, `input:checked + svg`) to mirror the control's states. For an `<svg>` to participate in accName computation (e.g., as the source of its parent `<button>`'s accName), explicitly set `role="img"` on it — not all browsers expose `<svg>` as an image by default. `aria-label` on the SVG is more robust than `<title>` for cross-browser/SR accName surfacing; `<title>` (if used) must be the SVG's first child and should be reinforced via `aria-labelledby` referencing it.
 - Element: `<summary>` — child of `<details>`; has no implicit ARIA role in the ARIA-in-HTML spec but gets a meaningful computed role only when it is the first child of its `<details>` parent (otherwise treated as a generic `<div>`); may be exposed as "Push Button", "Button", "Summary", or "disclosure triangle" depending on platform/browser/AAPI; interactive element with browser-baked keyboard support (operable via Space and Enter); activating it toggles the `open` attribute on its `<details>` parent; comes with implicit expanded/collapsed state exposed to screen readers; subject to the Children Presentational rule.
 - Element: `<details>` — implicit `group` role; native disclosure-widget container; the first `<summary>` child is the trigger and everything after it inside `<details>` is the controlled content; the browser toggles the `open` attribute to show/hide the content; can only have one trigger (extra `<summary>` elements are ignored as triggers); if no `<summary>` is provided, the browser supplies a generic "Details" label; supports a `name` attribute that, when shared across a group of `<details>`, makes them mutually exclusive (at most one open at a time) without JavaScript; Dragon voice software deprioritises `<details>` compared to buttons/links, making them harder for Dragon users to activate.
 - Element: `<p>` — technically usable as the content panel of a disclosure widget; prefer a grouping element when the panel may contain more than a single paragraph.
@@ -200,6 +209,7 @@
 - Element: `<button>` — labelable element; accName computation order: `aria-labelledby` → `aria-label` → `<label>` (via `for`/`id`) → element's content → `title`. Chrome DevTools exposes "From Label" among the possible sources.
 - Element: `<a>` (with `href`) — accName computation order: `aria-labelledby` → `aria-label` → element's content → `title`; when a higher-priority method names the link, `title` (if present) is meant to become the accDesc, but support is inconsistent.
 - Element: Sectioning / grouping elements (`<section>`, `<nav>`, `<header>`, `<aside>`, `<footer>`, etc.) — accName computation order: `aria-labelledby` → `aria-label` → `title`.
+- Element: `<title>` (SVG) — provides an alternative text description for an `<svg>` (similar to `alt` on `<img>`); MUST be the first child of its parent `<svg>` to be effective; reinforce by referencing it from the parent `<svg>` via `aria-labelledby="…"` so more browser/SR pairings expose it as the SVG's (and the parent button's) accName.
 - Element: `<table>` — applying `role="none"` suppresses the table's own role AND the semantics of its required children (`<tr>`, `<td>`, etc.) because those children are required and semantically tied; useful for layout tables in legacy codebases.
 
 ## ARIA Roles
@@ -213,6 +223,7 @@
 - Role: `search` — landmark for a collection of elements that together create a search facility (search of the site, of the current page, or an Internet-wide search).
 - Role: `region` — generic landmark for a perceivable section of content important enough that users will likely want to navigate to it and see it listed in a page summary; requires an accessible name.
 - Role: `button` — exposes an element as a button in the accessibility tree; widget role with a Children Presentational property that suppresses descendants' semantics; only changes the exposed role, not behaviour; doesn't convey expanded/collapsed state on its own.
+- Role: `img` — graphic/image role; an inline `<svg>` may need explicit `role="img"` because not all browsers expose `<svg>` as an image by default; required when the SVG icon is intended to supply the accessible name for its parent button.
 - Role: `link` — exposes an element as a link in the accessibility tree (used to reinstate link semantics after removing `href`).
 - Role: `generic` — what an `<a>` without an `href` (and a `<div>`/`<span>` by default) maps to; not exposed in the accessibility tree; name-prohibited — an element mapping to generic cannot have an accessible name (e.g., `<div aria-label="…">` is invalid).
 - Role: `list` — implicit role of `<ul>` and `<ol>`; can be re-instated with `role="list"` when CSS strips list semantics.
@@ -323,6 +334,12 @@
 - Pattern: Inspect accessible name in DevTools — open the accessibility panel for an element to see the computed name, where it was sourced from, and the full ordered list of naming methods available.
 - Pattern: Link with "opens in a new window" description — include `<span class="visually-hidden">(Opens in a new window)</span>` inside the link's content rather than relying on `title`/`aria-describedby`/`aria-description` (which aren't consistently announced); the visually-hidden text becomes part of the link's accName, guaranteeing it is announced.
 - Pattern: Fix an unnameable input where you can't add a `<label>` — give the visible-but-unassociated text node (e.g., a `<span>`) an `id` and reference it from the input via `aria-labelledby="…"`; fall back to `aria-label` only if there is no on-page text that can serve as the name.
+- Pattern: Icon button with a visible text label — `<button><svg aria-hidden="true">…</svg> Like</button>`; the text doubles as visible label AND accName (best for voice-control users).
+- Pattern: Icon button — visually-hidden text inside the button — `<button><svg aria-hidden="true">…</svg><span class="visually-hidden">Like</span></button>`.
+- Pattern: Icon button — `hidden`-attribute label + `aria-labelledby` (author's preferred) — `<button aria-labelledby="lbl"><svg aria-hidden="true">…</svg><span hidden id="lbl">Edit</span></button>`; label survives reader modes and avoids the visually-hidden double-announcement.
+- Pattern: Icon button — `aria-label` on the button (last resort) — `<button aria-label="Download"><svg aria-hidden="true">…</svg></button>`; reserve for when no on-page text can serve as the name; remember `aria-label` doesn't translate well.
+- Pattern: Icon button — icon-as-accName via SVG `aria-label` — `<button><svg role="img" aria-label="Delete">…</svg></button>`; do NOT add `aria-hidden` to the SVG in this approach; most robust SVG-naming pathway.
+- Pattern: Icon button — icon-as-accName via SVG `<title>` + `aria-labelledby` workaround — `<svg role="img" aria-labelledby="lbl"><title id="lbl">Send</title>…</svg>`; partial support (helps VoiceOver+Safari, still misses VoiceOver+Firefox).
 
 ## Complex Components
 
@@ -388,6 +405,19 @@
 - Why wrap input + SVG inside `<label>` — enlarges the interactive area of the control.
 - Touch-SR gotcha — `visually-hidden` (1px clip) and off-canvas absolute positioning both make the native control unreachable for users exploring by touch (e.g., Android TalkBack); the inclusive-hide technique keeps the control inside the viewport in its natural position.
 - Generalisation — the technique applies to any interactive form control you want to visually replace with an image (radio buttons, etc.), not just checkboxes.
+
+### Icon button
+
+- Definition — a `<button>` whose only label is an icon, with no visible accompanying text; ubiquitous in modern UIs (Like, Edit, Send, Download, Delete, etc.).
+- Base markup — `<button>` containing an inline `<svg>`; SVG is preferred over icon fonts (more semantic, flexible, resilient; can carry its own accName).
+- Failure mode if unnamed — SR announces only the button role; no accName means the user can't tell what action it initiates; violates SC 4.1.2 Name, Role, Value (Level A).
+- Five naming methods (author's recommended order) — (1) visible text label inside the button; (2) visually-hidden text via the `.visually-hidden` utility class; (3) `<span hidden id="…">` + `aria-labelledby` on the button (author's go-to); (4) `aria-label` on the button (last resort); (5) icon-as-accName via the `<svg>` itself (`role="img"` + `aria-label`, or `<title>` + `aria-labelledby` workaround).
+- SVG hide vs name decision — when the button is named by anything OTHER than the SVG, hide the SVG with `aria-hidden="true"` to avoid duplicate announcements; when the SVG IS the source of the accName, do NOT hide it (and give it `role="img"` + a name).
+- Why not icon fonts — they're less flexible than SVG and the icon disappears if the font/CSS fails to load; SVG icons can also carry their own accName, icon fonts can't.
+- Why not `aria-label` by default — `aria-label` overrides element content (mismatch risks SC 2.5.3 violation and breaks speech-control activation); doesn't translate well; reserve for cases without any on-page text to reference.
+- SVG-as-accName caveats — needs explicit `role="img"`; `aria-label` on the SVG is more robust than `<title>`; even with `<title>` + `aria-labelledby` reinforcement, VoiceOver paired with Firefox still doesn't surface the icon's name as the button's accName.
+- Author's recommendation — visually-hidden text inside the button (preferably `hidden` + `aria-labelledby`) is the most reliable, translatable, and reader-mode-safe approach; treat the SVG as decorative.
+- Reference — Scott O'Hara's "Contextually Marking up accessible images and SVGs" details how the marking-up choices behave across browser/SR pairings.
 
 ### Disclosure
 
@@ -506,6 +536,9 @@
 - Anti-pattern: Relying on `title` instead of `alt` on `<img>` — Firefox doesn't display `title` in place of a broken image, so the text equivalent disappears for some users.
 - Anti-pattern: Different `value` and `aria-label` on `<input type="submit | button | reset">` — visible label (`value`) is not contained in the accName, creating an SC 2.5.3 violation and breaking speech-control activation.
 - Anti-pattern: Naming a `<button>` via `<label for>` with text that doesn't match the button's visible label — risks SC 2.5.3 violation and adds an extra reading stop for virtual-cursor users.
+- Anti-pattern: Using an icon font (no text alternative) for an icon button — if the font fails to load or CSS isn't applied, the button has no visible label and no accName.
+- Anti-pattern: `aria-label` on an icon button that also contains visible text — `aria-label` overrides the content; sighted SR users hear a name mismatching what they see and speech-control users can't activate by speaking the visible label.
+- Anti-pattern: Naming an icon button solely via `<svg><title>…</title>` and trusting it everywhere — VoiceOver paired with Safari or Firefox doesn't reliably surface the title as the button's accName.
 
 ## Decision Rules
 
@@ -543,6 +576,10 @@
 - Decision: `title` vs ARIA for an `<iframe>`'s accName — prefer `title`; per Steve Faulkner's tests it is more reliably announced than ARIA naming attributes for iframes.
 - Decision: Visually-hidden text vs `aria-describedby`/`aria-description` for a link's "opens in new window" cue — use a visually-hidden span inside the link if you must guarantee the cue is announced, since ARIA descriptions are not consistently announced.
 - Decision: Fixing an existing element's accName without changing markup — reach for a method of HIGHER priority than the existing one (e.g., add `aria-labelledby` referencing the visible-but-unassociated label).
+- Decision: Icon-button naming — visually-hidden text vs `aria-label` — prefer visually-hidden text (translates, survives reader modes, picked up by all browser/SR pairings); use `aria-label` only when no on-page text can serve as the name.
+- Decision: `<title>` vs `aria-label` on the icon `<svg>` — `aria-label` is more robust across pairings; reinforce `<title>` with `aria-labelledby` if you must use it (still misses VoiceOver+Firefox).
+- Decision: Icon-as-accName vs decorative-SVG + button-named-separately — prefer naming the button via surrounding markup and treating the SVG as decorative; SVG-based naming is the most fragile path.
+- Decision: `.visually-hidden` class vs `hidden`+`aria-labelledby` for an icon-button label — `hidden`+`aria-labelledby` is the author's go-to: label survives reader modes and avoids the double-announcement a visually-hidden text node creates.
 
 ## Keyboard Behaviour
 
@@ -622,6 +659,9 @@
 - AT: `value` on `<input type="submit | button | reset">` repurposed as accDesc — when a higher-priority method has already named the input, browsers should expose `value` as the input's accDesc.
 - AT: `title` on `<img>`/`<a>` repurposed as accDesc — when a higher-priority method has already named the element, `title` is meant to be exposed as the accDesc; cross-browser/SR support is inconsistent.
 - AT: Chrome DevTools accessibility panel — shows the active accessible-name source AND lists all possible sources in the order of priority for that element type (e.g., "From Label", "From contents"); useful for diagnosing which naming method "won".
+- AT: SVG default exposure — not all browsers expose `<svg>` as an image by default; explicit `role="img"` is needed for an SVG icon to participate in its parent button's accName computation.
+- AT: SVG `<title>` cross-AT exposure — VoiceOver paired with Safari or Firefox currently fails to announce an `<svg><title>` as the parent button's accName; reinforcing with `aria-labelledby` on the `<svg>` fixes Safari but not Firefox.
+- AT: SVG `aria-label` cross-AT exposure — `aria-label` on an `<svg role="img">` is reliably surfaced by all relevant browser/SR pairings as the parent button's accName when no higher-priority method is present.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -656,6 +696,7 @@
 - Tool: Adrian Roselli's `aria-describedby` cross-AT documentation — exposure of `aria-describedby` across 8 interaction methods, 7 OSes, and 8 screen readers, with videos and a sample to test.
 - Tool: Steve Faulkner's iframe-naming tests — empirical results showing `title` is more reliably announced as an `<iframe>`'s accessible name than ARIA naming attributes.
 - Tool: Accessible Name and Description Computation specification — W3C document that formally defines the algorithm browsers use to derive an element's accName and accDesc.
+- Tool: Scott O'Hara's "Contextually Marking up accessible images and SVGs" — empirical tests of accessible image / SVG markup patterns across browser/SR pairings; useful for choosing between `<title>` vs `aria-label` on the SVG and icon-as-accName vs decorative-SVG approaches.
 - Tool: Accessibility Insights for Windows — desktop application for inspecting how content is exposed in the accessibility tree (used in the lecture to demonstrate that a heading with `role="none"` is reported as plain text vs a heading exposed as a heading).
 - Tool: Android TalkBack — Android touch-screen screen reader that supports "explore by touch" navigation: users drag their finger across the screen to hear what is directly underneath.
 
@@ -687,7 +728,7 @@
 - Term: Exact-exclusive accordion — an accordion where exactly one item is open at all times (zero open not allowed); the open item is "disabled" until another opens; requires JavaScript today; defined in the OpenUI Accordion component explainer.
 - Term: Visually-hidden — a CSS utility (a set of CSS rules typically applied via a `.visually-hidden` class) that hides content visually while keeping it accessible to assistive technologies; preferred over the older name `sr-only` because accessibility APIs expose the content to more than just screen readers.
 - Term: Inert — describes content (marked via the `inert` attribute) that is visually rendered but not exposed to accessibility APIs, completely non-interactive, and not targeted by any user-interaction event; conceptually like replacing the content with a static, non-interactive picture that has no alt text.
-- Term: Icon button — a button containing only an icon and no visible accompanying text; needs a text alternative (e.g., via `aria-labelledby` referencing a hidden `<span>`) so screen-reader users can identify it.
+- Term: Icon button — a `<button>` containing only an icon (typically an inline `<svg>`) and no visible accompanying text; needs an explicit accName via one of five methods (visible text, visually-hidden text, `hidden`+`aria-labelledby`, `aria-label` on the button, or icon-as-accName via `role="img"`+`aria-label` on the SVG); without one, violates SC 4.1.2 Name, Role, Value.
 - Term: Explore by touch — per the Material Design Accessibility Guidelines, "Touch interface screen readers allow users to run their finger over the screen to hear what is directly underneath. This provides the user with a quick sense of an entire interface."
 - Term: Inclusive hide (for form controls) — visually hiding a native form control while keeping it within the viewport in its natural position (via `position: absolute; opacity: 0`, sometimes enlarged with relative width/height) so touch screen-reader users can still find it by haptics.
 - Term: Accessible name (accName) — a string of text programmatically associated with an element and exposed by the browser to assistive technologies via the accessibility tree; provides a label for the element to AT users.

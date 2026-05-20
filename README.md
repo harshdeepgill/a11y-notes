@@ -275,6 +275,31 @@
 - Rule: Use the `autocomplete` attribute to identify each user-data input's purpose (SC 1.3.5 Level AA) — enables browser/AT modality presentation and auto-fill.
 - Rule: Use the `inputmode` attribute on text-style inputs to control which virtual keyboard mobile browsers display; it doesn't enforce input requirements or validation.
 - Rule: ARIA provides semantic parity with HTML but doesn't guarantee equal support across platforms — even when an ARIA construct is technically equivalent, real-world AT support may differ.
+- Rule: Form validation is the process of checking the validity of user input and providing feedback when missing or incorrect.
+- Rule: Client-side validation is not a substitute for server-side validation — anyone with browser DevTools can bypass it; always validate on the server side as well.
+- Rule: Native HTML5 constraint validation uses `required`, `pattern`, `type`, `minlength`, `maxlength`, `min`, `max`, and `step` to define input constraints; the browser uses them to check input and prevents submission with browser-default error messages.
+- Rule: Avoid native HTML5 form validation — default messages aren't customizable with CSS, often don't communicate the expected format, don't respect page zoom, and Chrome's disappear after a 5-second timeout.
+- Rule: Suppress native validation via `novalidate` on `<form>` or `formnovalidate` on the submit button, then roll your own validation in JavaScript (optionally via the JavaScript Constraint Validation API).
+- Rule: The best form validation is preventive — clearly mark required fields and state input requirements so users avoid errors in the first place.
+- Rule: Indicate required (and optional) fields to ALL users — the most inclusive approach is text inside the `<label>` (e.g., "Your email address (Required)" / "Job title (Optional)").
+- Rule: The general consensus is that required fields should always be clearly indicated; marking optional fields too lowers user-error rate per Baymard / NN Group studies.
+- Rule: Avoid using asterisks to mark required fields — not all users know what `*` means; if you must use one, hide it from screen readers via `aria-hidden="true"` AND mark the field programmatically required.
+- Rule: If you use an asterisk to indicate required, include instructions at the start of the form explaining what the asterisk means (text or `<abbr title="required">`).
+- Rule: Mark fields programmatically required via the HTML `required` attribute OR ARIA `aria-required="true"` — these only mark programmatic state; also indicate the requirement visibly in text.
+- Rule: Prefer `aria-required` over `required` for usability — `required` causes some browser/SR pairings to announce the field as invalid by default before the user has typed anything.
+- Rule: If you use `required`, you can suppress the default invalid-on-load announcement by setting `aria-invalid="false"` initially.
+- Rule: For radio-button groups that require a choice, mark the GROUP required by overriding `<fieldset>`'s `group` role with `role="radiogroup"` and `aria-required="true"`; neither `required` nor `aria-required` is valid on a plain `<fieldset>`, and `required` is not valid on `role="radiogroup"`.
+- Rule: `role="radiogroup"` represents radio buttons (single-select) only — for a checkbox group that requires at least one selection, put "(Please select at least one)" inside the `<legend>` instead.
+- Rule: Short hints/instructions can go inside the `<label>`; longer hints/instructions belong outside the label and are associated via `aria-describedby`.
+- Rule: Use `aria-invalid="true"` to indicate a field is invalid (no native HTML equivalent); when the field is valid again, REMOVE the attribute rather than setting it to `false`.
+- Rule: Per ARIA spec, don't set `aria-invalid="true"` on a required field simply because the user hasn't entered data yet — wait until they attempt to submit.
+- Rule: Use `aria-invalid` as a CSS styling hook (`input[aria-invalid="true"] { … }`) so invalid styling tracks the semantic state.
+- Rule: Color alone is not enough to communicate invalid state — pair red styling with an icon or text (SC 1.4.1).
+- Rule: When a field is invalid, communicate WHY in text and HOW to correct it (SC 3.3.1 + SC 3.3.3).
+- Rule: Associate error messages with their field via `aria-describedby` (broad support) or `aria-errormessage` (more semantic, but support is currently inconsistent).
+- Rule: `aria-errormessage` MUST be paired with `aria-invalid` — the error message is only announced when `aria-invalid="true"`; otherwise it must be hidden from all users.
+- Rule: Use inline SVG error icons with `fill="currentColor"` so the icon inherits the error text color and adapts to Forced Colors Mode.
+- Rule: Give the error-icon SVG an accessible name via `aria-label="Error:"` OR hide it with `aria-hidden="true"` and add a visually-hidden "Error:" text node inside the message.
 
 ## HTML Elements
 
@@ -330,6 +355,7 @@
 - Element: `<meter>` — labelable form control representing a scalar measurement within a known range; gets its accessible name natively from a properly associated `<label>`.
 - Element: `<output>` — labelable form control representing the result of a calculation or user action; gets its accessible name natively from a properly associated `<label>`.
 - Element: `<progress>` — labelable form control representing the completion progress of a task; gets its accessible name natively from a properly associated `<label>`.
+- Element: `<abbr>` — represents an abbreviation or acronym; the optional `title` attribute provides the expansion when none is present inline; using `<abbr class="req" title="required">*</abbr>` to mark required fields visually causes verbose VoiceOver announcements (title "Required" + inner "Star" + abbr exposed as a group).
 
 ## ARIA Roles
 
@@ -365,6 +391,7 @@
 - Role: `presentation` — suppresses an element's implicit semantics in the accessibility tree; the element no longer maps to its native role UNLESS the element is focusable (natively or via `tabindex`) OR it has a global ARIA state/property (e.g., `aria-label`); descendants of certain roles are treated as if they had `role="presentation"`; on a focusable element (e.g., a link), screen readers no longer announce the role but still announce the element's contents; name-prohibited — an element with `role="presentation"` cannot have an accessible name. ARIA 1.1 introduced `role="none"` as a synonym — `presentation` is often confused with `aria-hidden="true"`; prefer `role="none"`.
 - Role: Name-prohibited roles — `caption`, `code`, `definition`, `deletion`, `emphasis`, `generic`, `insertion`, `mark`, `paragraph`, `presentation`, `strong`, `subscript`, `suggestion`, `superscript`, `term`, `time`; any element mapping (implicitly or explicitly) to one of these roles cannot have an accessible name.
 - Role: `none` — synonym of `presentation`; preferred wording because it is less likely to be misread as "hide this element"; same suppression rules and exceptions apply.
+- Role: `radiogroup` — composite widget role representing a group of radio buttons that can only have a single entry checked at any one time; supports `aria-required` but NOT the HTML `required` attribute; used to override `<fieldset>`'s implicit `group` role when the group needs to be marked required.
 
 ## Attributes
 
@@ -382,12 +409,12 @@
 - Attribute: `aria-valuetext` — Property holding a textual value for an element (e.g., an HTML range slider); should change as the user changes the element's value.
 - Attribute: `aria-valuenow` — Property holding the current numeric value of an element; should change as the user changes the element's value.
 - Attribute: `aria-level` — Property paired with the `heading` role to indicate heading level.
-- Attribute: `aria-required` — ARIA state for required form controls; equivalent to HTML `required`; using both is redundant and can fall out of sync.
+- Attribute: `aria-required` — ARIA state indicating a form control is required. Functionally equivalent to HTML `required` for screen-reader announcement, but preferred for usability because — unlike `required` — it does not cause default invalid-on-load announcements in some browser/SR pairings. Using both is redundant and can fall out of sync. Allowed on `role="radiogroup"` (where `required` is NOT allowed); used to mark a radio-button group as required. Always pair with a visible in-text indicator.
 - Attribute: `aria-setsize` — ARIA property exposing the total number of items in a set (e.g., a `name`-grouped radio button group); auto-set by browsers for grouped radio buttons today and expected to be auto-set for `name`-grouped `<details>` in the future.
 - Attribute: `aria-posinset` — ARIA property exposing an item's position within its set; auto-set by browsers for `name`-grouped radio buttons today and expected for `name`-grouped `<details>` in the future.
 - Attribute: `href` — Required on `<a>` for it to be a hyperlink; defines the link's destination as a URL or in-page fragment.
 - Attribute: `disabled` — Boolean HTML attribute that disables an interactive element — typically a form control such as `<button>`, `<input>`, `<select>`, or `<fieldset>` (cascades to all descendants); any value (or no value) disables the element because `disabled` is boolean. When set, the element no longer receives keyboard focus or mouse events and is removed from the tab order; it remains in the accessibility tree and screen readers announce the disabled state. Does not apply to links. Browsers often render disabled controls in low-contrast grey — author styles must restore visual accessibility.
-- Attribute: `required` — HTML boolean attribute on form controls; native equivalent of `aria-required="true"`; prefer it over the ARIA equivalent.
+- Attribute: `required` — HTML boolean attribute on form controls; programmatically marks the field as required. Functionally equivalent to `aria-required="true"`, but causes some browser/SR pairings to announce the field as invalid by default — before the user has typed anything. Prefer `aria-required` for usability; if you must use `required`, set `aria-invalid="false"` initially to suppress the unwanted default invalid announcement. Not valid on `<fieldset>` or on `role="radiogroup"`. Always pair with a visible in-text indicator (e.g., "Required" in the label).
 - Attribute: `download` — `<a>` attribute that triggers a file download instead of navigation.
 - Attribute: `tabindex` — Controls focusability and tab order; `tabindex="0"` makes an otherwise non-focusable element focusable; a negative integer (e.g., `tabindex="-1"`) on an interactive element removes it from the page's tabbing order while keeping it focusable programmatically and via mouse; cannot be used to make an element non-focusable — only `disabled` or `inert` can.
 - Attribute: `inert` — Boolean HTML attribute on a region; the region and all descendants are visually rendered but are NOT exposed to accessibility APIs, are completely non-interactive (not keyboard-accessible), and are not targeted by any user-interaction events (mouse, touch included). Useful for the page content outside a custom modal dialog so that no interaction happens behind the backdrop. The `<dialog>` element provides this behaviour for free when used in modal mode.
@@ -410,6 +437,16 @@
 - Attribute: `type` — `<object>` attribute specifying the MIME type of the embedded resource (e.g., `image/svg+xml`). On `<input>`, the `type` attribute (`text`, `email`, `url`, `tel`, `number`, `password`, `search`, `button`, `submit`, `reset`, etc.) describes the broad category of input — useful but not specific enough to identify user-data purpose for SC 1.3.5; pair with `autocomplete`.
 - Attribute: `autocomplete` — HTML attribute that identifies the purpose of a form field for SC 1.3.5 Identify Input Purpose (Level AA); accepts one of 51 fixed values per the HTML spec (e.g., `name`, `family-name`, `username`, `email`, `tel`, `address-line1`, `address-line2`, `bday`, `one-time-code`); enables browsers and AT to present the purpose via different modalities (icons, prompts) and to offer auto-fill; the `one-time-code` value lets iOS Safari surface SMS codes in the QuickType bar.
 - Attribute: `inputmode` — enumerated HTML attribute hinting at the type of data the user will enter so mobile browsers display the appropriate virtual keyboard; accepts one of 8 fixed values — `none`, `text`, `tel`, `url`, `email`, `numeric`, `decimal`, `search`. Does NOT enforce input requirements or affect validation; only changes the on-screen keyboard.
+- Attribute: `aria-invalid` — ARIA state indicating a form field's value is invalid; no native HTML equivalent. Set to `"true"` when invalid; REMOVE the attribute when the field becomes valid rather than setting `"false"` (per ARIA spec). Can be set to `"false"` initially on a `required` field to suppress the default invalid-on-load announcement. Doubles as a CSS styling hook (`input[aria-invalid="true"] { … }`). Per ARIA spec, don't set `true` on a required field before the user has attempted to submit.
+- Attribute: `aria-errormessage` — ARIA property that references the element(s) providing an error message for a form field. MUST be paired with `aria-invalid` — the error message is only announced when `aria-invalid="true"`; otherwise it must be hidden from all users. Differs from `aria-describedby` in that it semantically marks the referenced content as an error message; cross-browser/SR support is currently inconsistent (per Adrian Roselli's "Exposing Field Errors").
+- Attribute: `pattern` — HTML attribute on text-style `<input>`; accepts a JavaScript regular expression that the entered data must match to be considered valid.
+- Attribute: `minlength` — HTML attribute on text-style `<input>` specifying the minimum length of the text value allowed.
+- Attribute: `maxlength` — HTML attribute on text-style `<input>` specifying the maximum length of the text value allowed.
+- Attribute: `min` — HTML attribute on `<input type="number">` (and similar) specifying the minimum numerical value allowed.
+- Attribute: `max` — HTML attribute on `<input type="number">` (and similar) specifying the maximum numerical value allowed.
+- Attribute: `step` — HTML attribute on `<input type="number">` (and similar) specifying the numerical step increment.
+- Attribute: `novalidate` — HTML boolean attribute on `<form>`; suppresses the browser's automatic form validation and default error-bubble messages so you can supply your own via JavaScript.
+- Attribute: `formnovalidate` — HTML boolean attribute on submit `<button>` or `<input type="submit">`; disables the form's automatic validation when that specific submission is used.
 
 ## WCAG Success Criteria
 
@@ -432,6 +469,9 @@
 - WCAG: SC 1.4.5 Images of Text (Level AA) — "If the technologies being used can achieve the visual presentation, text is used to convey information rather than images of text except for the following: Customizable: The image of text can be visually customized to the user's requirements; Essential: A particular presentation of text is essential to the information being conveyed." Note: Logotypes (text that is part of a logo or brand name) are considered essential. Enables users who require particular text customisation (size, color, line spacing, font family) to adjust the presentation.
 - WCAG: SC 1.4.9 Images of Text (No Exception) (Level AAA) — "Images of text are only used for pure decoration or where a particular presentation of text is essential to the information being conveyed." Note: Logotypes are considered essential. Stricter version of SC 1.4.5.
 - WCAG: SC 1.3.5 Identify Input Purpose (Level AA) — "The purpose of each input field collecting information about the user can be programmatically determined." Met via the HTML `autocomplete` attribute; enables browsers and AT to present input purpose via different modalities (icons, prompts) and to offer auto-fill, which is particularly useful for users with motor impairments.
+- WCAG: SC 3.3.1 Error Identification (Level A) — "If an input error is automatically detected, the item that is in error is identified and the error is described to the user in text." The benefit of text is that it helps people with cognitive, language, and learning disabilities who have difficulty understanding meaning represented by icons or other visual cues.
+- WCAG: SC 3.3.3 Error Suggestion (Level AA) — "If an input error is automatically detected and suggestions for correction are known, then the suggestions are provided to the user, unless it would jeopardize the security or purpose of the content." Helps users with learning disabilities fill in forms successfully and reduces the number of times users with motion impairments need to change an input value.
+- WCAG: SC 1.4.1 Use of Color (Level A) — color must not be the only means of conveying information; for invalid-state communication, pair red styling with an icon or text so users with color blindness can still perceive the state.
 
 ## Patterns & Recipes
 
@@ -533,6 +573,18 @@
 - Pattern: Identify input purpose with `autocomplete` — apply the appropriate value to each user-data input (e.g., `autocomplete="name | family-name | username | address-line1 | address-line2 | email | tel | bday"`) to meet SC 1.3.5 and enable browser auto-fill.
 - Pattern: One-time SMS-code input — `<input type="text" inputmode="decimal" autocomplete="one-time-code">`; iOS Safari surfaces codes received via SMS in the QuickType bar so the user can fill them with one tap.
 - Pattern: Mobile virtual keyboard via `inputmode` — combine `type` with `inputmode` (e.g., `<input type="text" inputmode="numeric">` or `<input type="search" inputmode="search">`) to drive the on-screen keyboard mobile browsers display.
+- Pattern: Suppress native form validation — add `novalidate` to the `<form>` (`<form novalidate>`) OR `formnovalidate` to the submit button (`<button type="submit" formnovalidate>Submit</button>`) so you can render custom error messages in the DOM.
+- Pattern: Indicate required visibly in the label — append "(Required)" or "(Optional)" inside the `<label>` text (e.g., `<label for="email">Your email address (Required)</label>`).
+- Pattern: Asterisk fallback markup — `<p>Required fields are marked with an asterisk (<abbr class="req" title="required">*</abbr>).</p>` at the start of the form, then reuse the `<abbr>` next to each required label; still imperfect for SRs (asterisk announced as "Star").
+- Pattern: Hide asterisk from SR + programmatic required — `<label for="email">Your email<span aria-hidden="true">*</span></label><input type="email" id="email" aria-required="true">`.
+- Pattern: Mark a radio-button group required — `<fieldset role="radiogroup" aria-required="true">…</fieldset>`; the `role="radiogroup"` override allows `aria-required` where the default `group` role does not.
+- Pattern: Mark a checkbox group's requirement — embed the rule in `<legend>` (e.g., `<legend>I am interested in the following (Please select at least one):</legend>`); `aria-required` is not used because radiogroup is single-select only.
+- Pattern: Mark a field invalid — set `aria-invalid="true"` on the input; remove the attribute entirely when valid (don't set `"false"`, except as the initial value on a `required` field to suppress default invalid announcement).
+- Pattern: Style invalid fields via the ARIA state — `input[aria-invalid="true"] { border: 2px solid red; … }`; the visual style tracks the semantic state.
+- Pattern: Associate an error message via `aria-describedby` — `<input … aria-invalid="true" aria-describedby="email_error"><p id="email_error">Please provide an email address.</p>`; broad cross-AT support.
+- Pattern: Associate an error message via `aria-errormessage` — `<input … aria-invalid="true" aria-errormessage="email_error"><p id="email_error">Please provide an email address.</p>`; pair with `aria-invalid="true"` and hide the message from all users when not invalid.
+- Pattern: Inline SVG error icon with `currentColor` — `<p id="email_error"><svg aria-label="Error:" fill="currentColor">…</svg> This email address does not exist.</p>`; the icon inherits the message text color and adapts to Forced Colors Mode.
+- Pattern: Visually-hidden "Error:" alternative — `<svg aria-hidden="true">…</svg><span class="visually-hidden">Error: </span> This email address does not exist.`.
 
 ## Complex Components
 
@@ -797,6 +849,31 @@
 - Translation gap — Chrome auto-translation skips attribute content (`placeholder`, `aria-label`); only visible text gets translated, so attribute-only labels leave non-native speakers unable to identify controls.
 - Anti-pattern reminder — `<div>Label</div><input>`, `<span>Label</span><input>`, `<label>Label</label><input>` (no for/id), `<div for>` are all common forms of missing programmatic association.
 
+### Form validation
+
+- Definition — checking the validity of user input and providing feedback when missing or incorrectly formatted; can happen on the client (in the browser) or on the server.
+- Philosophy — preventive validation first; help users avoid errors via clear required-field marking and explicit input requirements (per "A Definite Guide to Sensible Form Validations": "Avoid the need for throwing any error. Be preventive.").
+- Client vs server — client-side validation is for perceived performance and immediate feedback, but is easily bypassed via browser DevTools; client-side validation is NOT a substitute for server-side validation.
+- Native HTML5 constraint validation — `required`, `pattern` (JS regex), `type` (e.g., `email`, `url`, `number`), `minlength`/`maxlength`, `min`/`max`, `step`; the browser uses these to check input and prevents submission when invalid, showing browser-default error messages.
+- Native default-message gotchas — not customizable with CSS, often don't communicate the expected format (Firefox: "match the requested format" without explaining the format), don't respect page zoom (per Adrian Roselli "Avoid default form validation"), and Chrome's disappear after a 5-second timeout — information vanishes when the user needs it most.
+- Suppression — `<form novalidate>` suppresses the form's native validation; alternatively `formnovalidate` on the submit `<button>` or `<input type="submit">` disables validation for that specific submission.
+- Custom validation — the JavaScript Constraint Validation API lets you customize timing, messages, and add validations HTML can't express; custom JS libraries are also fine if they're accessible.
+- Required marking — text-in-label is the most inclusive ("Your email address (Required)"); asterisks are common but require an `<abbr title="required">` + start-of-form instructions + `aria-hidden` on the glyph + programmatic `aria-required` to be acceptable.
+- `required` vs `aria-required` — both have good support; prefer `aria-required` for usability because `required` causes some browser/SR pairings to announce the field as invalid by default before any input.
+- Suppress default invalid-on-load — when using `required`, set `aria-invalid="false"` initially to prevent the unwanted default invalid announcement and to make state announcement consistent across screen readers.
+- Required radio-button group — `<fieldset role="radiogroup" aria-required="true">`; neither `required` nor `aria-required` is valid on a plain `<fieldset>` (group role is structural, not interactive), and `required` is not allowed on `radiogroup`.
+- Required checkbox group — radiogroup is single-select only; instead embed the rule in `<legend>` (e.g., "(Please select at least one)"). 
+- Hints / instructions — short hints inside `<label>`; longer hints/instructions outside the label associated via `aria-describedby`; the description is announced after name+role with a screen-reader pause and is flattened to a string (lists/links lose their semantics).
+- Invalid state — `aria-invalid="true"` on the input; remove (don't set `false`) when valid. ARIA spec: don't set `true` before the user has attempted submission simply because data hasn't been entered.
+- Styling hook — `input[aria-invalid="true"] { border: 2px solid red; }` ties visual styling to the ARIA state.
+- Color-only invalid signals — fail SC 1.4.1; pair red styling with an icon or text.
+- Error messages — required by SC 3.3.1 (identify and describe the error in text) and SC 3.3.3 (suggest correction when known).
+- `aria-describedby` vs `aria-errormessage` — both can associate an error message with the input; `aria-describedby` has broader, more consistent support; `aria-errormessage` is more semantic but currently inconsistent (per Adrian Roselli's "Exposing Field Errors").
+- `aria-errormessage` pairing — MUST be used with `aria-invalid`; the message is announced ONLY when `aria-invalid="true"`; the message element must otherwise be hidden from all users.
+- Error icon — inline SVG with `fill="currentColor"` so the icon inherits the error text color and stays adaptable in Forced Colors Mode.
+- Error icon naming — give the SVG `aria-label="Error:"` so SRs announce "Error:" before the message, OR hide the SVG via `aria-hidden="true"` and add a visually-hidden "Error:" `<span>` inside the message.
+- Outro topics (next chapter) — when/how to validate (on submit vs while typing), disabling the submit button (don't), and ensuring users find every invalid field without walking through them all.
+
 ## Anti-Patterns
 
 - Anti-pattern: Exposing a form as a landmark when the form is the page's primary content — adds unnecessary noise.
@@ -912,6 +989,18 @@
 - Anti-pattern: `role="group"` + `aria-labelledby` as a substitute for `<fieldset>`/`<legend>` — Adrian Roselli's testing shows this construct is broken on Android TalkBack and iOS VoiceOver; native HTML is more accessible.
 - Anti-pattern: Using `aria-label` to name a form control when a visible label is already in the markup — risks SC 2.5.3 Label-in-Name mismatch and speech-control activation failure.
 - Anti-pattern: Reaching for `<div>` + `role="group"` to group form controls because `<fieldset>`/`<legend>` are hard to style — produces a less-accessible result on mobile; visually-hide the `<legend>` and re-add a stylable label instead.
+- Anti-pattern: Relying on native HTML5 constraint validation alone — default messages aren't customizable with CSS, often don't communicate the expected format, don't respect page zoom, and Chrome's disappear after a 5-second timeout.
+- Anti-pattern: `required` on `<fieldset>` — invalid markup; the `group` role is structural, not interactive, so `required` doesn't make sense on it.
+- Anti-pattern: `aria-required` on `<fieldset>` — invalid; not permitted on the `group` role.
+- Anti-pattern: `required` on `role="radiogroup"` — invalid; only `aria-required` is permitted on the radiogroup role.
+- Anti-pattern: `role="radiogroup"` for a group of checkboxes — radiogroup is single-select only; checkboxes need a different requirement-marking approach (legend wording).
+- Anti-pattern: Asterisk announced as "star" — most screen readers announce a literal `*` as "Star"; verbose and unhelpful; hide via `aria-hidden` or avoid altogether.
+- Anti-pattern: `<abbr class="req" title="required">*</abbr>` without hiding from SR — VoiceOver on macOS announces the title's "Required" value, the inner "Star", AND exposes the `<abbr>` as a group; even more verbose than a bare asterisk.
+- Anti-pattern: Setting `aria-invalid="true"` on a required field before the user has attempted submission — ARIA spec advises against marking a field invalid simply because data hasn't been entered.
+- Anti-pattern: Setting `aria-invalid="false"` to clear invalid state when the field becomes valid — REMOVE the attribute instead; `false` may behave inconsistently. Exception: setting `false` initially on a `required` field to suppress the default invalid-on-load announcement.
+- Anti-pattern: Color-only invalid indication — fails SC 1.4.1; users with certain types of color blindness cannot perceive the state.
+- Anti-pattern: `aria-errormessage` without `aria-invalid="true"` — the message is not announced.
+- Anti-pattern: An `aria-errormessage`-referenced element visible to all users at all times — should be hidden from all users until `aria-invalid="true"`.
 
 ## Decision Rules
 
@@ -977,6 +1066,10 @@
 - Decision: Explicit vs implicit `<label>` association — prefer explicit (`for`/`id`); add it even when nesting the input inside `<label>` because not all ATs honour implicit-nesting alone.
 - Decision: `<fieldset>`/`<legend>` vs ARIA `role="group"` for grouping form controls — prefer native HTML; ARIA group support is currently broken on Android TalkBack and iOS VoiceOver.
 - Decision: Placeholder vs label — `placeholder` is NEVER a label; only use it (sparingly) for a sample/example value alongside an actual `<label>`.
+- Decision: `aria-required` vs `required` — prefer `aria-required` for usability; `required` causes some browser/SR pairings to announce the field as invalid by default before the user has typed anything. If you must use `required`, set `aria-invalid="false"` initially to suppress the default announcement.
+- Decision: `aria-describedby` vs `aria-errormessage` for error messages — `aria-describedby` has broader, more consistent cross-AT support today; `aria-errormessage` is more semantically precise but currently inconsistent (per Adrian Roselli's "Exposing Field Errors").
+- Decision: Marking required vs optional fields — mark BOTH for the lowest user-error rate; usability test for your specific form (per Baymard / Nielsen Norman group).
+- Decision: Native HTML5 constraint validation vs custom JavaScript — prefer custom JavaScript; native messages are uncustomisable, fail page zoom, and Chrome's disappear after 5 seconds.
 
 ## Keyboard Behaviour
 
@@ -1092,6 +1185,11 @@
 - AT: Browser auto-translation skips attributes — Chrome's auto-translation skips attribute content (`placeholder`, `aria-label`); only visible text content gets translated, so users requesting page translation may still see/hear attribute labels in the original language.
 - AT: `placeholder` disappears on input — placeholder content vanishes the moment the user starts typing; instructions placed in placeholder become unavailable precisely when needed; the only way to restore them is to delete the typed value.
 - AT: `aria-describedby` announcement timing — screen readers typically pause after the name and role of a control before announcing the accessible description; cleaner UX than reading name+description as one run-on string.
+- AT: `required` default invalid announcement — some browser/SR pairings announce a `required` form field as invalid by default, even before the user has typed anything in it; one of the main reasons to prefer `aria-required`.
+- AT: Asterisk announced as "Star" — most screen readers announce a literal `*` as the word "Star".
+- AT: `<abbr title="…">` verbose announcement — VoiceOver on macOS announces the title's value, then the inner glyph (e.g., "Star"), and exposes the `<abbr>` as a group; an even noisier alternative to a bare asterisk.
+- AT: `aria-errormessage` cross-AT inconsistency — current support is uneven across browser/SR pairings (per Adrian Roselli's "Exposing Field Errors"); test in the pairings your audience uses.
+- AT: `aria-errormessage` announcement gating — only announced when `aria-invalid="true"`; the referenced message must otherwise be hidden from all users.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -1158,6 +1256,12 @@
 - Tool: Eric Bailey's "Don't use the placeholder attribute" — comprehensive case against the `placeholder` attribute covering translation, cognitive-disability usability, contrast issues, styling limits, and look-alike pre-fill.
 - Tool: Adrian Roselli's article on `<fieldset>` and `<legend>` — empirical testing across desktop and mobile screen readers showing the `role="group"` + `aria-labelledby` construct is broken for TalkBack (Android) and VoiceOver (iOS) users.
 - Tool: WebAIM 2023 Report (form-inputs stat) — annual a11y audit found 35.8% of the 4.4–5 million form inputs on top-1M home pages were not properly labelled.
+- Tool: Adrian Roselli's "Avoid default form validation" — argument against native HTML5 constraint validation: uncustomisable messages, no page-zoom respect, Chrome 5-second timeout, and missing format communication.
+- Tool: Adrian Roselli's "Exposing Field Errors" — empirical tests of how browser/SR pairings expose error messages via `aria-describedby`, `aria-errormessage`, and ARIA live regions.
+- Tool: JavaScript Constraint Validation API — built-in browser API for customizing native form validation timing, custom error messages, and validations HTML alone can't express.
+- Tool: "A Definite Guide to Sensible Form Validations" — source of the preventive-validation philosophy ("Avoid the need for throwing any error. Be preventive.").
+- Tool: Baymard Institute checkout usability study — failing to mark BOTH required and optional fields leads to unnecessary validation errors, user confusion, slower checkout, and abandonments.
+- Tool: Nielsen Norman Group required-fields article — argues marking optional fields lightens cognitive load (users don't have to infer optional vs required from surrounding context).
 
 ## Glossary
 
@@ -1237,4 +1341,11 @@
 - Term: Placeholder text — text that appears in a form control when it has no value set; provided via the `placeholder` attribute; not a label.
 - Term: Cognitive disability (intellectual disability) — describes a person with greater difficulty in mental tasks than the average person; includes short-term memory loss, traumatic brain injury, and ADHD; by far the most common type of disability; can also be inhibited situationally by multitasking, sleep deprivation, stress, substance abuse, or depression.
 - Term: Input purpose (SC 1.3.5) — what specific user-data an input is collecting; programmatically determinable via the `autocomplete` attribute and used by browsers/AT to present icons, prompts, and auto-fill options.
+- Term: Form validation — the process of checking the validity of user-provided information and providing feedback when missing or incorrect.
+- Term: Input error (WCAG 2.0) — "information provided by the user that is not accepted" by the system; examples include required-but-omitted info and information that falls outside the required data format or allowed values.
+- Term: Native HTML5 constraint validation — browser-built validation using HTML attributes (`required`, `pattern`, `type`, `minlength`, `maxlength`, `min`, `max`, `step`); the browser checks input and prevents submission when constraints are not met, showing default error messages.
+- Term: Client-side validation — checking the validity of user input in the browser before sending data to the server; improves perceived performance but is easily bypassed via browser DevTools — NOT a substitute for server-side validation.
+- Term: Server-side validation — validation performed after data reaches the server; final check that cannot be bypassed in the browser.
+- Term: Required field — a form field the user must complete; marked programmatically via `required` or `aria-required="true"` AND visibly in text (e.g., "(Required)" in the label).
+- Term: Optional field — a form field the user is not obligated to complete; marked visibly (e.g., "(Optional)" in the label) for usability.
 - Term: accName priority (author's recommended) — HTML content → HTML attribute/element → `aria-labelledby` → `aria-label`; almost the reverse of the formal algorithm.

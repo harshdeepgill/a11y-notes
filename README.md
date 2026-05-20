@@ -260,6 +260,21 @@
 - Rule: `<figcaption>` is not a substitute for `alt` — if the `<figure>` contains an `<img>`, the image still needs its own alt; otherwise the figcaption is describing nothing.
 - Rule: AI cannot yet replace humans for writing alt text — AI describes what an image contains but cannot communicate purpose, emotion, or why the author chose that specific image.
 - Rule: Manually test alt text as part of every accessibility review — disable images on the page (e.g., via the Web Developer extension) and verify the alt text alone communicates the same information.
+- Rule: Form labels must be programmatically associated with their controls — visual proximity alone doesn't expose the relationship in the accessibility tree (SC 1.3.1, SC 4.1.2).
+- Rule: The `for` attribute only works on `<label>` — applying it to a `<div>` or `<span>` creates no programmatic association.
+- Rule: A `<label>` can contain only one labelable element at a time; additional inputs inside the same `<label>` are not allowed and won't be labelled by it.
+- Rule: Prefer explicit (`for`/`id`) label association over implicit (input nested inside `<label>`) — implicit alone isn't reliably announced across all ATs; add for/id even when nesting.
+- Rule: Only labelable HTML elements can get an accessible name natively from `<label>` — `<button>`, `<input>` (except `type="hidden"`), `<meter>`, `<output>`, `<progress>`, `<select>`, `<textarea>`.
+- Rule: `<input type="button | submit | reset">` get their accessible name natively from the `value` attribute, not from `<label>`.
+- Rule: Form controls should have visible labels — hidden labels make it harder for users with cognitive disabilities or short-term memory issues to remember what each field is for.
+- Rule: Visually-hidden labels are acceptable only when context makes the control's purpose obvious (e.g., a search input next to a Search button).
+- Rule: Don't use the `placeholder` attribute as a label or to provide important instructions — placeholder disappears when the user starts typing, isn't visible when fields are pre-filled, doesn't translate well, has low default contrast, and is easily mistaken for entered content when contrast is raised.
+- Rule: Provide hints and instructions OUTSIDE the `<label>` and associate them with the input via `aria-describedby` — keeps the accessible name short while exposing helper text after the name+role.
+- Rule: Prefer `<fieldset>` + `<legend>` over `role="group"` + `aria-labelledby` to group form controls — ARIA group support is currently broken on Android TalkBack and iOS VoiceOver (per Adrian Roselli's tests).
+- Rule: `<legend>` must be a DIRECT child of `<fieldset>` — wrapping it inside another element breaks the relationship and the browser stops exposing the legend as the fieldset's accessible name.
+- Rule: Use the `autocomplete` attribute to identify each user-data input's purpose (SC 1.3.5 Level AA) — enables browser/AT modality presentation and auto-fill.
+- Rule: Use the `inputmode` attribute on text-style inputs to control which virtual keyboard mobile browsers display; it doesn't enforce input requirements or validation.
+- Rule: ARIA provides semantic parity with HTML but doesn't guarantee equal support across platforms — even when an ARIA construct is technically equivalent, real-world AT support may differ.
 
 ## HTML Elements
 
@@ -286,9 +301,9 @@
 - Element: `<input>` — form control; requires an accessible name supplied programmatically via `<label for>` (preferred), `aria-label`, or `aria-labelledby` — visible-only labels (e.g., an adjacent `<span>` with no association) leave the input without an accessible name. Browsers ship default state styling (checked/selected/disabled) and adjust colors for Forced Colors modes; these styles can be visually replaced by an inline `<svg>` while keeping the native input as the source of truth for assistive tech. Text-style inputs (`type="text | password | email | url | tel | number | search"`) compute accName as: `aria-labelledby` → `aria-label` → `<label>` (concatenated by DOM order if multiple) → `title` → `placeholder`. Button-style inputs (`type="submit | button | reset"`) compute accName as: `aria-labelledby` → `aria-label` → `<label>` → `value` → localized "submit"/"reset" string (submit/reset only) → `title`; when `value` is overridden by a higher-priority method it is repurposed as the accDesc.
 - Element: `<input type="checkbox">` — checkbox form control with built-in browser state styling for checked, unchecked, disabled, and Forced Colors; can be visually replaced by an inline `<svg aria-hidden="true">` placed after it inside the `<label>`, while the input itself remains interactive and screen-reader-accessible via the inclusive-hide technique (`position: absolute; opacity: 0`).
 - Element: `<input type="radio">` — radio button; a group of radio buttons sharing the same `name` attribute becomes mutually exclusive (only one can be selected); browsers expose group size via `aria-setsize` and the focused item's position via `aria-posinset`, so screen readers can announce "radio button, 1 of 3" or similar. Like checkboxes, ships default checked/disabled/Forced Colors styling and can be visually replaced by an inline `<svg>` using the same inclusive-hide technique.
-- Element: `<label>` — programmatically associates with a form control via its `for` attribute matching the control's `id`; the label text becomes the control's accessible name. Wrapping the `<input>` AND its visual replacement (e.g., an inline `<svg>`) inside the `<label>` enlarges the control's interactive area.
+- Element: `<label>` — programmatically associates with a form control via its `for` attribute matching the control's `id`; the label text becomes the control's accessible name. Wrapping the `<input>` AND its visual replacement (e.g., an inline `<svg>`) inside the `<label>` enlarges the control's interactive area. Supports both explicit (`for`/`id`) and implicit (nested input) association; implicit alone is not reliably announced across all ATs — add `for`/`id` even when nesting. A `<label>` may contain only one labelable element at a time; additional inputs inside the same label are invalid and not labelled by it. `for` only works on the `<label>` element — applying it to a `<div>` or `<span>` creates no programmatic association.
 - Element: `<h2>` — visible heading commonly used as the accessible name source for a group or region via `aria-labelledby`.
-- Element: `<fieldset>` — form-grouping element for related form controls; pairs with `<legend>` (its first child) to expose the group's accessible name; applying `disabled` disables the fieldset and all of its descendant controls; applying `inert` makes the region and its descendants inert (rendered but inaccessible). accName computation order: `aria-labelledby` → `aria-label` → first `<legend>` → `title`.
+- Element: `<fieldset>` — form-grouping element for related form controls; has an implicit `role="group"`; pairs with `<legend>` (its first DIRECT child) to expose the group's accessible name — wrapping the `<legend>` in another element breaks the relationship and the browser stops exposing it as the fieldset's accName. Applying `disabled` disables the fieldset and ALL of its descendant controls EXCEPT controls that are descendants of the first `<legend>` element child, if any; applying `inert` makes the region and its descendants inert (rendered but inaccessible). accName computation order: `aria-labelledby` → `aria-label` → first `<legend>` → `title`.
 - Element: `<legend>` — supplies the accessible name for its parent `<fieldset>`; helps users understand the purpose of the grouped controls (e.g., "Shipping Address", "Billing Address").
 - Element: Name-prohibited HTML elements — `<caption>`, `<figcaption>`, `<code>`, `<del>`, `<em>`, `<ins>`, `<mark>`, `<p>`, `<strong>`, `<sub>`, `<sup>`, `<dfn>`, `<time>` (and generic `<div>`/`<span>`) all map to roles that disallow an accessible name; `aria-label`/`aria-labelledby` on these elements is invalid.
 - Element: `<caption>` — provides the accessible name for its containing `<table>` (in addition to being a name-prohibited element itself).
@@ -312,6 +327,9 @@
 - Element: `<picture>` — responsive image element; contains one or more `<source>` children and one fallback `<img>`; the browser uses the `alt` attribute on the fallback `<img>` as the text alternative for whichever source is rendered.
 - Element: `<source>` — child of `<picture>`; supplies `media` and `srcset` to select the responsive image source; has no `alt` of its own.
 - Element: `<object>` — one of seven ways to embed an SVG on a page; not announced as an image by default — explicit `role="img"` is required to surface image semantics; the `alt` attribute does NOT work on `<object>` even when `role="img"` is set, so name it via `aria-labelledby` or `aria-label` and describe it via `aria-describedby`; content between the opening and closing tags serves as both a rendered fallback when the embedded resource fails to load AND as the AT-exposed extended description when referenced via `aria-describedby`.
+- Element: `<meter>` — labelable form control representing a scalar measurement within a known range; gets its accessible name natively from a properly associated `<label>`.
+- Element: `<output>` — labelable form control representing the result of a calculation or user action; gets its accessible name natively from a properly associated `<label>`.
+- Element: `<progress>` — labelable form control representing the completion progress of a task; gets its accessible name natively from a properly associated `<label>`.
 
 ## ARIA Roles
 
@@ -380,7 +398,7 @@
 - Attribute: `title` — Discouraged by the HTML spec as a way to provide accessible names — user agents often require a pointing device (mouse) to expose `title` as a tooltip, excluding keyboard-only and touch-only users; can be used to indicate the purpose of a landmark such as a `<search>` element when no visible label is available, but the only currently unproblematic use case is providing an accessible name to an `<iframe>`. CMSs like Wordpress commonly expose both Alt and Title fields when uploading an image — users often populate both with the same string, causing duplicate announcements; Firefox additionally has a bug where an empty `alt` plus a non-empty `title` on `<img>` surfaces the title as the accName, defeating the purpose of `alt=""` for decoration.
 - Attribute: `alt` — `<img>`'s accessible-name attribute; the alt-text value becomes the image's accessible name; an empty `alt` (`alt=""`) excludes the image from the accessibility tree (decorative); a single space is NOT empty and the image is then announced unnamed. Strategy is type-driven — decorative/redundant `alt=""`; image of text → the exact same words as the image; complex image → short alt + extended description elsewhere; functional image → the function (destination or action), not the icon; informative image → the information communicated in context. Only works on `<img>`; on other elements (even with `role="img"`) it has no effect — name them via `aria-label`/`aria-labelledby`. `alt` must always be present on `<img>` even when empty; when absent, VoiceOver falls back to announcing the `src` file name while JAWS and NVDA ignore the image.
 - Attribute: `value` — provides the accessible name for some form controls such as `<input type="submit">` (e.g., `value="Send message"` → accName "Send message"); on `<input type="submit | button | reset">` it sits BELOW `<label>` in the accName order, and when overridden by `aria-labelledby`/`aria-label`/`<label>` the `value` is repurposed as the accessible description.
-- Attribute: `placeholder` — text shown in an empty text-style input; sits at the BOTTOM of the accName fallback order (below `title`) for text-style `<input>`, `<select>`, and `<textarea>`; do not rely on it as a substitute for `<label>`.
+- Attribute: `placeholder` — text shown in an empty text-style input; sits at the BOTTOM of the accName fallback order (below `title`) for text-style `<input>`, `<select>`, and `<textarea>`. Do NOT use as a substitute for `<label>` or to supply important instructions — placeholder disappears as soon as the user starts typing (instructions vanish when needed most), isn't visible when fields are pre-filled, isn't translated by browser auto-translation (Chrome skips attribute content), defaults to a low-contrast light grey that often fails WCAG, and is easily mistaken for entered content when contrast is raised. Per Eric Bailey, "Don't use the placeholder attribute".
 - Attribute: `aria-description` (ARIA 1.3) — Provides an accessible description as a string of text (inline), same purpose as `aria-describedby` but without an `id` reference; not currently fully implemented in all browsers; may not translate well (like `aria-label`); prefer `aria-describedby` when the description exists in the DOM.
 - Attribute: `aria-details` — References one or more elements (by `id`) that provide additional information about the element; the SR announces only the PRESENCE of the extended info, never its contents; does NOT contribute to the accDesc computation; does NOT move focus; use it as a "heads-up" pointer to structured/navigable info (e.g., a `<details>` explaining a CVV field) — not as an accDesc.
 - Attribute: `for` — `<label>` attribute referencing an input's `id` to programmatically associate the label with the input and expose its text as the input's accessible name.
@@ -389,7 +407,9 @@
 - Attribute: `srcset` — attribute on `<img>` or on `<picture>`'s child `<source>` listing responsive image candidates.
 - Attribute: `media` — attribute on `<source>` inside `<picture>` specifying the media query that gates the source (e.g., `media="(min-width: 1024px)"`).
 - Attribute: `data` — `<object>` attribute pointing to the embedded resource (e.g., the SVG file URL).
-- Attribute: `type` — `<object>` attribute specifying the MIME type of the embedded resource (e.g., `image/svg+xml`).
+- Attribute: `type` — `<object>` attribute specifying the MIME type of the embedded resource (e.g., `image/svg+xml`). On `<input>`, the `type` attribute (`text`, `email`, `url`, `tel`, `number`, `password`, `search`, `button`, `submit`, `reset`, etc.) describes the broad category of input — useful but not specific enough to identify user-data purpose for SC 1.3.5; pair with `autocomplete`.
+- Attribute: `autocomplete` — HTML attribute that identifies the purpose of a form field for SC 1.3.5 Identify Input Purpose (Level AA); accepts one of 51 fixed values per the HTML spec (e.g., `name`, `family-name`, `username`, `email`, `tel`, `address-line1`, `address-line2`, `bday`, `one-time-code`); enables browsers and AT to present the purpose via different modalities (icons, prompts) and to offer auto-fill; the `one-time-code` value lets iOS Safari surface SMS codes in the QuickType bar.
+- Attribute: `inputmode` — enumerated HTML attribute hinting at the type of data the user will enter so mobile browsers display the appropriate virtual keyboard; accepts one of 8 fixed values — `none`, `text`, `tel`, `url`, `email`, `numeric`, `decimal`, `search`. Does NOT enforce input requirements or affect validation; only changes the on-screen keyboard.
 
 ## WCAG Success Criteria
 
@@ -411,6 +431,7 @@
 - WCAG: SC 1.1.1 Non-text Content (Level A) — "All non-text content that is presented to the user has a text alternative that serves the equivalent purpose…" Exception: "If non-text content is pure decoration, is used only for visual formatting, or is not presented to users, then it is implemented in a way that it can be ignored by assistive technology." The value of the alt text is determined by how well it serves the image's equivalent purpose.
 - WCAG: SC 1.4.5 Images of Text (Level AA) — "If the technologies being used can achieve the visual presentation, text is used to convey information rather than images of text except for the following: Customizable: The image of text can be visually customized to the user's requirements; Essential: A particular presentation of text is essential to the information being conveyed." Note: Logotypes (text that is part of a logo or brand name) are considered essential. Enables users who require particular text customisation (size, color, line spacing, font family) to adjust the presentation.
 - WCAG: SC 1.4.9 Images of Text (No Exception) (Level AAA) — "Images of text are only used for pure decoration or where a particular presentation of text is essential to the information being conveyed." Note: Logotypes are considered essential. Stricter version of SC 1.4.5.
+- WCAG: SC 1.3.5 Identify Input Purpose (Level AA) — "The purpose of each input field collecting information about the user can be programmatically determined." Met via the HTML `autocomplete` attribute; enables browsers and AT to present input purpose via different modalities (icons, prompts) and to offer auto-fill, which is particularly useful for users with motor impairments.
 
 ## Patterns & Recipes
 
@@ -504,6 +525,14 @@
 - Pattern: Functional image inside a button — alt describes the action, not the icon — `<button><img alt="Search"></button>` (not `alt="magnifier"`); `<button><img alt="Print"></button>` (not `alt="printer"`).
 - Pattern: Test alt text via "Disable images" — install the Web Developer toolbar extension; under Images choose "Disable images" and reload; the browser displays each image's alt text where the image used to be — verify the alt alone communicates the image's purpose.
 - Pattern: Inspect alt text in-place — Web Developer toolbar → Images → "Display Alt Attributes" prints each image's alt above the rendered image without disabling rendering.
+- Pattern: Explicit-plus-implicit form-label association — nest the input inside the `<label>` AND match its `id` to the label's `for` attribute (e.g., `<label for="username">Username <input id="username" type="text"></label>`); covers ATs that don't honour the implicit-nesting association alone.
+- Pattern: Reuse a Search button's label as the search input's accName — give the button an `id` and reference it from the input via `aria-labelledby` (e.g., `<input type="search" aria-labelledby="search_btn"><button id="search_btn">Search</button>`); avoids a separate hidden label.
+- Pattern: Provide form-field hints via `aria-describedby` — put the helper text in a separate element (`<div id="passw0rd-requirements">…</div>`) outside the `<label>`, and reference its id from the input's `aria-describedby`; announced after the name and role with a screen-reader pause.
+- Pattern: Group repeated-field sections by purpose — wrap shipping address fields in `<fieldset><legend>Shipping Address:</legend>…</fieldset>` and billing fields in their own `<fieldset><legend>Billing Address:</legend>…</fieldset>` so screen readers can announce which section each input belongs to.
+- Pattern: Work around `<legend>` styling limits — keep a `<legend class="visually-hidden">[label]</legend>` as the fieldset's accName and add a `<span aria-hidden="true">[label]</span>` carrying the same text for design control; the hidden legend still names the fieldset; the visible span is hidden from AT to avoid duplicate announcement.
+- Pattern: Identify input purpose with `autocomplete` — apply the appropriate value to each user-data input (e.g., `autocomplete="name | family-name | username | address-line1 | address-line2 | email | tel | bday"`) to meet SC 1.3.5 and enable browser auto-fill.
+- Pattern: One-time SMS-code input — `<input type="text" inputmode="decimal" autocomplete="one-time-code">`; iOS Safari surfaces codes received via SMS in the QuickType bar so the user can fill them with one tap.
+- Pattern: Mobile virtual keyboard via `inputmode` — combine `type` with `inputmode` (e.g., `<input type="text" inputmode="numeric">` or `<input type="search" inputmode="search">`) to drive the on-screen keyboard mobile browsers display.
 
 ## Complex Components
 
@@ -741,6 +770,33 @@
 - ARIA — use `<button aria-pressed="true|false">` to indicate whether the toggle is on or off.
 - State management — JavaScript must flip `aria-pressed` when the user activates the button.
 
+### Forms
+
+- Importance — forms are one of the most important user interactions on the Web; users should be able to complete them efficiently and without confusion (per Paul Ford, "The `<form>` element… changed the web from a read-only medium for physics papers into a read-write medium for anything").
+- WebAIM 2023 stat — 35.8% of the 4.4–5 million form inputs identified on the top-1M home pages were not properly labelled.
+- Labeling priority — `<label>` with `for`/`id` first; `aria-labelledby` referencing existing on-page text next (when `<label>` can't be used or the label is a `<div>`/`<span>` you can't change); `aria-label` last (translation gaps, no visible match).
+- Labelable elements — only `<button>`, `<input>` (except `type="hidden"`), `<meter>`, `<output>`, `<progress>`, `<select>`, `<textarea>` can get accName natively from `<label>`. `<input type="button | submit | reset">` get accName from the `value` attribute, not from `<label>`.
+- Explicit vs implicit `<label>` association — explicit (`for`/`id`) is reliably announced across ATs; implicit (input nested inside `<label>`) is not announced as the accName by all ATs; add explicit `for`/`id` even when nesting.
+- One labelable element per `<label>` — additional inputs inside the same `<label>` are not labelled by it and are invalid.
+- `for` only on `<label>` — `<div for="username">` does NOT create an association; the label remains visually-only.
+- Visible labels required — form controls should have visible labels for usability (cognitive disabilities, short-term memory). Hide a label only when context makes its purpose obvious.
+- Search input — visually-hidden label is acceptable because the context (search form, adjacent Search button) makes purpose obvious; the input still needs an accName.
+- Visually-hidden label techniques — (1) `<label class="visually-hidden">`; (2) `<span hidden id="…">` + `aria-labelledby` on the input; (3) `aria-label` (last resort); a common variant is to reuse the adjacent Search button's id as the input's `aria-labelledby` target.
+- Don't use `placeholder` as a label — disappears when typing, low default contrast (light grey often fails WCAG), not translated by browser auto-translation, mistakable for pre-fill when contrast is raised; fails SC 3.3.2 when used as a label.
+- Hints and instructions — put helper text OUTSIDE the `<label>` in a separate element and reference it from the input via `aria-describedby`; the description is announced after name+role with a screen-reader pause.
+- aria-describedby structure loss — long descriptions (lists, links) are flattened to a string when announced; structured content's semantics are not exposed in the announcement.
+- Grouping form controls — use native `<fieldset>` + `<legend>` (implicit `role="group"`); the `<legend>` must be the first DIRECT child of `<fieldset>` to expose as the group's accName.
+- Disabled cascade — `disabled` on `<fieldset>` disables all contained controls EXCEPT controls that are descendants of the first `<legend>`.
+- Radio-button group announcement — when radio buttons share a `name`, screen readers announce how many options the group contains (like list-item counts).
+- Use cases for `<fieldset>`/`<legend>` — grouping radio buttons by purpose ("Choose a T-shirt color"), grouping repeated-field sections (Shipping vs Billing address), multiple-choice questions, address blocks.
+- Legend styling workaround — `<legend class="visually-hidden">[label]</legend>` + `<span aria-hidden="true">[label]</span>` for design control; the hidden legend still names the fieldset, the visible span avoids duplicate announcement.
+- ARIA `role="group"` substitute — currently broken on Android TalkBack and iOS VoiceOver (per Adrian Roselli's testing); prefer native `<fieldset>`/`<legend>` even when CSS Grid layout is awkward.
+- Identify input purpose — apply `autocomplete` values per the HTML spec's 51 fixed values (e.g., `name`, `family-name`, `username`, `email`, `tel`, `address-line1`, `bday`, `one-time-code`); meets SC 1.3.5 Level AA; enables auto-fill and AT modality presentation.
+- One-time code inputs — `<input type="text" inputmode="decimal" autocomplete="one-time-code">`; iOS Safari surfaces SMS codes in the QuickType bar.
+- Mobile keyboard — `inputmode` (8 values: `none`, `text`, `tel`, `url`, `email`, `numeric`, `decimal`, `search`) hints at the virtual keyboard mobile browsers should display; does NOT enforce validation.
+- Translation gap — Chrome auto-translation skips attribute content (`placeholder`, `aria-label`); only visible text gets translated, so attribute-only labels leave non-native speakers unable to identify controls.
+- Anti-pattern reminder — `<div>Label</div><input>`, `<span>Label</span><input>`, `<label>Label</label><input>` (no for/id), `<div for>` are all common forms of missing programmatic association.
+
 ## Anti-Patterns
 
 - Anti-pattern: Exposing a form as a landmark when the form is the page's primary content — adds unnecessary noise.
@@ -848,6 +904,14 @@
 - Anti-pattern: Functional-image alt describing the icon ("magnifier") instead of the action ("Search") — voice-control users say the action label, not the icon name.
 - Anti-pattern: Treating images of text as if they were graphics — strips users' ability to customise text size, color, line spacing, and font family; fails SC 1.4.5 unless the image is a logotype or its presentation is essential.
 - Anti-pattern: Hiding a meaningful image with `alt=""`, `aria-hidden="true"`, or `role="none"` to "keep the page quiet" — withholds information from AT users that sighted users get; reserve these techniques for pure decoration only.
+- Anti-pattern: `placeholder` as a substitute for `<label>` — disappears when the user starts typing, defaults to low-contrast grey, isn't translated, and is mistakable for pre-filled content; fails SC 3.3.2 when used as a label.
+- Anti-pattern: `placeholder` used for important formatting instructions — vanishes when the user types (precisely when they need the info most) and isn't translated.
+- Anti-pattern: `<label>` without matching `for`/`id` — sighted users see the label, but the input has no programmatic accName; AT users can't identify the control.
+- Anti-pattern: Multiple labelable elements inside one `<label>` — only the first is labelled; additional inputs are invalid in that label.
+- Anti-pattern: `<legend>` wrapped inside another element (e.g., `<div><legend>…</legend></div>`) — breaks the legend→fieldset relationship; legend is no longer exposed as the group's accName.
+- Anti-pattern: `role="group"` + `aria-labelledby` as a substitute for `<fieldset>`/`<legend>` — Adrian Roselli's testing shows this construct is broken on Android TalkBack and iOS VoiceOver; native HTML is more accessible.
+- Anti-pattern: Using `aria-label` to name a form control when a visible label is already in the markup — risks SC 2.5.3 Label-in-Name mismatch and speech-control activation failure.
+- Anti-pattern: Reaching for `<div>` + `role="group"` to group form controls because `<fieldset>`/`<legend>` are hard to style — produces a less-accessible result on mobile; visually-hide the `<legend>` and re-add a stylable label instead.
 
 ## Decision Rules
 
@@ -909,6 +973,10 @@
 - Decision: Where to put extended descriptions for complex images — `aria-describedby` for short flat text; `<figcaption>` (referenced via `aria-labelledby`) for structured content; `<details>`/`<summary>` for opt-in detail; separate page when very long; `<object>` fallback for SVG-embedded charts.
 - Decision: alt vs `<figcaption>` — alt describes what the image represents; figcaption provides editorial/illustrative context that relates the image back to surrounding content; do not duplicate.
 - Decision: Image of text vs real text — prefer real text styled with CSS so users can customise presentation; image of text only for logotypes, presentation-essential content, or contexts that target the SC 1.4.5 customisable/essential exception.
+- Decision: Form-control naming method — `<label>` (with `for`/`id`) first; `aria-labelledby` referencing an existing text element next; `aria-label` last (translation gaps, no visible match).
+- Decision: Explicit vs implicit `<label>` association — prefer explicit (`for`/`id`); add it even when nesting the input inside `<label>` because not all ATs honour implicit-nesting alone.
+- Decision: `<fieldset>`/`<legend>` vs ARIA `role="group"` for grouping form controls — prefer native HTML; ARIA group support is currently broken on Android TalkBack and iOS VoiceOver.
+- Decision: Placeholder vs label — `placeholder` is NEVER a label; only use it (sparingly) for a sample/example value alongside an actual `<label>`.
 
 ## Keyboard Behaviour
 
@@ -1018,6 +1086,12 @@
 - AT: Firefox empty-alt + non-empty title bug — Firefox ignores the empty alt and uses `title` as the image's accessible name, defeating the purpose of `alt=""` for decoration; another reason to avoid `title` on `<img>`.
 - AT: Broken-image placeholder shows alt — when an `<img>` fails to load, browsers display a broken-image placeholder next to the alt text (when present), so users on slow networks / data-saver mode still perceive the information.
 - AT: Speech recognition uses alt — when an image doesn't load, voice-control users can speak the image's alt text to trigger the action the image represents.
+- AT: Implicit `<label>` association — not all assistive technologies announce the nested label as the input's accName; explicit `for`/`id` is more reliable across ATs.
+- AT: `<fieldset>`/`<legend>` group announcement — screen readers indicate the start, end, and name of the group in a predictable way when these elements are used to group and label controls.
+- AT: `role="group"` mobile support — currently broken on Android (TalkBack) and iOS (VoiceOver); the ARIA-grouped + `aria-labelledby` construct does not announce reliably there, even though it has semantic parity with HTML.
+- AT: Browser auto-translation skips attributes — Chrome's auto-translation skips attribute content (`placeholder`, `aria-label`); only visible text content gets translated, so users requesting page translation may still see/hear attribute labels in the original language.
+- AT: `placeholder` disappears on input — placeholder content vanishes the moment the user starts typing; instructions placed in placeholder become unavailable precisely when needed; the only way to restore them is to delete the typed value.
+- AT: `aria-describedby` announcement timing — screen readers typically pause after the name and role of a control before announcing the accessible description; cleaner UX than reading name+description as one run-on string.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -1080,6 +1154,10 @@
 - Tool: Adrian Roselli's AI-captions experiment — empirical comparison of AI-generated vs human-written alt text, including a reverse experiment that generates images from text descriptions; demonstrates AI's inability to convey purpose, emotion, or contextual relevance.
 - Tool: Tetralogical disclosure-pattern for long image descriptions — `<details>`/`<summary>` containing the `<img>` in the trigger and the long description in the panel; reveals the description on demand.
 - Tool: Wordpress image upload modal — exposes Alt text, Title, Caption, and Description fields; the hint advises describing purpose or leaving alt empty for decoration but does NOT extend the same advice to Title; users commonly populate both with the same value, causing duplicate announcements.
+- Tool: Build A Better Mobile Input (Alex Holachek) — web app for previewing the virtual keyboards mobile browsers display for different `type`/`inputmode`/`autocomplete` combinations; generates a copy-pasteable code snippet.
+- Tool: Eric Bailey's "Don't use the placeholder attribute" — comprehensive case against the `placeholder` attribute covering translation, cognitive-disability usability, contrast issues, styling limits, and look-alike pre-fill.
+- Tool: Adrian Roselli's article on `<fieldset>` and `<legend>` — empirical testing across desktop and mobile screen readers showing the `role="group"` + `aria-labelledby` construct is broken for TalkBack (Android) and VoiceOver (iOS) users.
+- Tool: WebAIM 2023 Report (form-inputs stat) — annual a11y audit found 35.8% of the 4.4–5 million form inputs on top-1M home pages were not properly labelled.
 
 ## Glossary
 
@@ -1153,4 +1231,10 @@
 - Term: Informative image — image that communicates information essential or useful for understanding the page (photos of people, scenery, products); alt describes the information IN THE CONTEXT it is used.
 - Term: Nulled alt — the convention of setting `alt=""` (empty string) to mark an image as decorative or redundant so screen readers skip it.
 - Term: Web Developer toolbar — Chris Pederick's Chrome/Firefox extension that exposes per-domain settings to disable images, display alt attributes, view structural information, and more; central to manual alt-text testing.
+- Term: Labelable element — HTML element that can get its accessible name natively from `<label>`: `<button>`, `<input>` (except `type="hidden"`), `<meter>`, `<output>`, `<progress>`, `<select>`, `<textarea>`.
+- Term: Explicit label association — `<label for>`/`id` pairing between a `<label>` and its form control; the browser exposes the label's text as the control's accessible name.
+- Term: Implicit label association — placing the `<input>` inside the `<label>` element; not reliably announced across all assistive technologies; add explicit `for`/`id` even when nesting.
+- Term: Placeholder text — text that appears in a form control when it has no value set; provided via the `placeholder` attribute; not a label.
+- Term: Cognitive disability (intellectual disability) — describes a person with greater difficulty in mental tasks than the average person; includes short-term memory loss, traumatic brain injury, and ADHD; by far the most common type of disability; can also be inhibited situationally by multitasking, sleep deprivation, stress, substance abuse, or depression.
+- Term: Input purpose (SC 1.3.5) — what specific user-data an input is collecting; programmatically determinable via the `autocomplete` attribute and used by browsers/AT to present icons, prompts, and auto-fill options.
 - Term: accName priority (author's recommended) — HTML content → HTML attribute/element → `aria-labelledby` → `aria-label`; almost the reverse of the formal algorithm.

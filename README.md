@@ -166,6 +166,13 @@
 - Rule: Don't combine `aria-label` on an icon button with visible text inside it — `aria-label` overrides the content; risks SC 2.5.3 violation and breaks speech-control activation.
 - Rule: Author's go-to icon-button naming method — visually-hidden `<span hidden id="…">…</span>` inside the button referenced via `aria-labelledby` on the button; label survives reader modes and avoids the visually-hidden double-announcement.
 - Rule: Author's overall recommendation for icon buttons — treat the SVG as decorative (`aria-hidden="true"`) and name the button via surrounding markup; SVG-based naming pathways are currently the most fragile.
+- Rule: `aria-labelledby` accepts a space-separated list of IDs — the browser concatenates the referenced elements' computed texts (in reference order) to form the accessible name.
+- Rule: The order of IDs in `aria-labelledby` matters — reversing the order reverses the resulting accName.
+- Rule: `aria-labelledby` can reference the element itself alongside other elements — useful to prepend or append text to the element's own content as the accName (e.g., `<button id="self" aria-labelledby="self el">Close</button>` produces "Close this thing").
+- Rule: Each interactive element should have a unique accessible name — unless multiple elements perform the exact same action.
+- Rule: A button's accName should describe the action it initiates; a link's accName should describe its destination.
+- Rule: For a pagination component, identify the current page with `aria-current="page"`.
+- Rule: In a pagination, place the "Next" link BEFORE the individual page links in the DOM — placing it at the end forces keyboard users to tab through every page link to reach it, defeating its purpose.
 
 ## HTML Elements
 
@@ -340,6 +347,12 @@
 - Pattern: Icon button — `aria-label` on the button (last resort) — `<button aria-label="Download"><svg aria-hidden="true">…</svg></button>`; reserve for when no on-page text can serve as the name; remember `aria-label` doesn't translate well.
 - Pattern: Icon button — icon-as-accName via SVG `aria-label` — `<button><svg role="img" aria-label="Delete">…</svg></button>`; do NOT add `aria-hidden` to the SVG in this approach; most robust SVG-naming pathway.
 - Pattern: Icon button — icon-as-accName via SVG `<title>` + `aria-labelledby` workaround — `<svg role="img" aria-labelledby="lbl"><title id="lbl">Send</title>…</svg>`; partial support (helps VoiceOver+Safari, still misses VoiceOver+Firefox).
+- Pattern: Compound accName from multiple sources — give each text fragment an `id` and reference them (space-separated) in `aria-labelledby`; referenced texts are concatenated in reference order.
+- Pattern: Prepend/append text to an element's own content as accName — give the element an `id` and include it in its own `aria-labelledby` alongside the prepend/append fragment ids.
+- Pattern: DRY accName for pagination links — wrap pagination in `<nav aria-labelledby="…">`; add a hidden label `<span hidden id="pagination_label">Blog</span>`; add a separate hidden prefix `<span hidden id="prefix">Page</span>`; on each link `<a href="…" id="link_N" aria-labelledby="prefix link_N">N</a>` produces "Page N" without repeating "Page" in markup.
+- Pattern: Basic accessible pagination markup — `<nav>` with `aria-labelledby` referencing a hidden label, containing `<ol role="list">` (re-instate list semantics) with each link in an `<li>`; mark current page with `aria-current="page"`.
+- Pattern: Accessible pill remove button — visually-hidden `<span id="<pill>-remove" class="visually-hidden">Remove</span>` inside the button + `<span aria-hidden="true">×</span>` for the icon + `aria-labelledby="<pill>-remove <pill>"` on the button so the accName becomes e.g. "Remove CSS".
+- Pattern: Compound accName via `aria-label` + `aria-labelledby` combo (rare) — `<button id="css-remove" aria-label="Remove" aria-labelledby="css-remove css">×</button>` — `aria-label` provides the base, `aria-labelledby` overrides it and concatenates the pill text; valid but use cautiously due to `aria-label` translation issues.
 
 ## Complex Components
 
@@ -448,6 +461,26 @@
 - hidden-until-found CSS interference — `[hidden] { display: none !important; }` reset rules block until-found's effect; use `[hidden]:not(:is([hidden="until-found"])) { display: none !important; }` instead so plain `hidden` still wins on specificity while until-found works.
 - hidden-until-found generated-box — under until-found browsers use `content-visibility: hidden`, so the hidden element still generates a box; move padding, borders, and backgrounds to a child container (e.g., `.panel__content`) to avoid unexpected whitespace and borders.
 
+### Pagination
+
+- Semantics — represent the pagination with `<nav>` (landmark) containing an `<ol>` of links; re-instate list semantics with `role="list"` since pagination styles typically remove default list markers (which strips list semantics in some Safari versions on macOS).
+- Naming — give the `<nav>` an accessible name (e.g., `aria-labelledby` pointing to a hidden `<span hidden id="…">Blog</span>`) to identify its purpose.
+- Current-page indicator — use `aria-current="page"` on the link to the current page (SR announces "current page").
+- Per-link accName — page-number-only link text isn't descriptive out of context; make accNames like "Page 1", "Page 2"… by adding "Page" via a visually-hidden `<span>` inside each link OR via a single shared hidden "Page" prefix referenced from each link's `aria-labelledby`.
+- DRY naming — one hidden `<span id="prefix">Page</span>` + each link's own `id` referenced in `aria-labelledby="prefix link_N"` produces "Page N" accNames without repeating "Page" in markup; without referencing the link's own `id`, the link's number would be excluded (because `aria-labelledby` overrides content).
+- "Next" link position — place the Next link BEFORE the individual page links in the DOM so keyboard users can reach it quickly; placing it at the end forces tabbing through every page link first.
+
+### Pill / Chip
+
+- Definition — a UI pattern (also called Chips in Google's Material Design system) used for filtering, sorting, and similar contexts; comes in interactive and non-interactive variants.
+- Anatomy — pill-shaped container, optional thumbnail, text label, and (for interactive variants) an icon button that typically removes the pill.
+- Per-pill remove-button accName — each remove button needs a UNIQUE name describing WHICH pill it removes (e.g., "Remove CSS"), not just "Remove".
+- Naming via `aria-labelledby` — give the pill text a stable `id`; in the remove button include a visually-hidden `<span id="<pill>-remove">Remove</span>` and reference both ids on the button: `aria-labelledby="<pill>-remove <pill>"` → accName "Remove <pill text>".
+- Naming via `aria-label` + `aria-labelledby` combo — `<button id="<pill>-remove" aria-label="Remove" aria-labelledby="<pill>-remove <pill>">×</button>` is valid but rare; use cautiously because `aria-label` doesn't translate well.
+- Icon — use an inline `<svg>` for the remove icon in production (lecture uses a text character only for demo simplicity); hide the icon from SRs with `aria-hidden="true"`.
+- Markup skeleton — `<ul>` of `<li>` pill containers; each pill has a `<span>` for the text and a `<button>` (with the visually-hidden Remove span + the icon) for the remove action.
+- Gotcha — if every remove button shares the accName "Remove", VoiceOver's Web rotor / similar element-list tools show a list of identically-named buttons and users can't distinguish them.
+
 ### Menu / Menubar
 
 - Structure — `role="menu"` or `role="menubar"` for the container with `role="menuitem"` children.
@@ -539,6 +572,8 @@
 - Anti-pattern: Using an icon font (no text alternative) for an icon button — if the font fails to load or CSS isn't applied, the button has no visible label and no accName.
 - Anti-pattern: `aria-label` on an icon button that also contains visible text — `aria-label` overrides the content; sighted SR users hear a name mismatching what they see and speech-control users can't activate by speaking the visible label.
 - Anti-pattern: Naming an icon button solely via `<svg><title>…</title>` and trusting it everywhere — VoiceOver paired with Safari or Firefox doesn't reliably surface the title as the button's accName.
+- Anti-pattern: Placing the "Next" link at the END of a pagination — keyboard users must tab through every individual page link to reach it, practically defeating the purpose of the Next affordance.
+- Anti-pattern: Pill remove buttons with identical "Remove" accNames — users in element-list views (e.g., VoiceOver Web rotor) get a list of buttons they can't distinguish; each remove button must carry the pill's text in its accName.
 
 ## Decision Rules
 
@@ -580,6 +615,7 @@
 - Decision: `<title>` vs `aria-label` on the icon `<svg>` — `aria-label` is more robust across pairings; reinforce `<title>` with `aria-labelledby` if you must use it (still misses VoiceOver+Firefox).
 - Decision: Icon-as-accName vs decorative-SVG + button-named-separately — prefer naming the button via surrounding markup and treating the SVG as decorative; SVG-based naming is the most fragile path.
 - Decision: `.visually-hidden` class vs `hidden`+`aria-labelledby` for an icon-button label — `hidden`+`aria-labelledby` is the author's go-to: label survives reader modes and avoids the double-announcement a visually-hidden text node creates.
+- Decision: Compound pill-button accName — `aria-labelledby` with two ids (visually-hidden "Remove" + pill text) vs `aria-label`+`aria-labelledby` combo — prefer the visually-hidden span approach because `aria-label` doesn't translate well; the combo is valid but rare.
 
 ## Keyboard Behaviour
 
@@ -662,6 +698,8 @@
 - AT: SVG default exposure — not all browsers expose `<svg>` as an image by default; explicit `role="img"` is needed for an SVG icon to participate in its parent button's accName computation.
 - AT: SVG `<title>` cross-AT exposure — VoiceOver paired with Safari or Firefox currently fails to announce an `<svg><title>` as the parent button's accName; reinforcing with `aria-labelledby` on the `<svg>` fixes Safari but not Firefox.
 - AT: SVG `aria-label` cross-AT exposure — `aria-label` on an `<svg role="img">` is reliably surfaced by all relevant browser/SR pairings as the parent button's accName when no higher-priority method is present.
+- AT: Multi-id `aria-labelledby` concatenation — referenced computed texts are concatenated in reference order; Chrome DevTools lists each contributing source in its reference order so the resulting accName can be verified.
+- AT: Self-reference in `aria-labelledby` — including the element's own `id` in the attribute combines its content with other referenced texts in the order they appear in the attribute, letting you prepend or append fragments to the element's own content.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -729,6 +767,8 @@
 - Term: Visually-hidden — a CSS utility (a set of CSS rules typically applied via a `.visually-hidden` class) that hides content visually while keeping it accessible to assistive technologies; preferred over the older name `sr-only` because accessibility APIs expose the content to more than just screen readers.
 - Term: Inert — describes content (marked via the `inert` attribute) that is visually rendered but not exposed to accessibility APIs, completely non-interactive, and not targeted by any user-interaction event; conceptually like replacing the content with a static, non-interactive picture that has no alt text.
 - Term: Icon button — a `<button>` containing only an icon (typically an inline `<svg>`) and no visible accompanying text; needs an explicit accName via one of five methods (visible text, visually-hidden text, `hidden`+`aria-labelledby`, `aria-label` on the button, or icon-as-accName via `role="img"`+`aria-label` on the SVG); without one, violates SC 4.1.2 Name, Role, Value.
+- Term: Pill / Chip — a UI pattern consisting of a pill-shaped container with optional thumbnail, text label, and (interactive variant) an icon button for removal; "Chips" is Google's Material Design name for the same pattern.
+- Term: Compound accessible name — a name composed by `aria-labelledby` from multiple referenced elements (and optionally the element itself), concatenated in reference order; enables DRY naming for repeated UI patterns like pagination links and pill remove buttons.
 - Term: Explore by touch — per the Material Design Accessibility Guidelines, "Touch interface screen readers allow users to run their finger over the screen to hear what is directly underneath. This provides the user with a quick sense of an entire interface."
 - Term: Inclusive hide (for form controls) — visually hiding a native form control while keeping it within the viewport in its natural position (via `position: absolute; opacity: 0`, sometimes enlarged with relative width/height) so touch screen-reader users can still find it by haptics.
 - Term: Accessible name (accName) — a string of text programmatically associated with an element and exposed by the browser to assistive technologies via the accessibility tree; provides a label for the element to AT users.

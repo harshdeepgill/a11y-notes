@@ -225,6 +225,13 @@
 - Rule: Avoid special characters in page titles (e.g., the vertical bar `|`) that cause screen readers to make weird/awkward announcements; prefer a simple dash or en-dash.
 - Rule: When prefixing/appending the site name in a title, place the UNIQUE page title FIRST (e.g., `Page Title – Site Name`) so it stays visible in the browser tab and is announced by screen readers before the site name.
 - Rule: The page's `<h1>` should match the unique part of the `<title>` — they serve the same purpose; typical exception is the homepage, where the `<h1>` may describe the primary content (e.g., "Latest blog posts") while the title is just the site name.
+- Rule: Always declare the page's natural language with `lang` on the `<html>` element (not `<body>`) — `<body>` doesn't cover `<head>` content (`<title>`, meta, etc.).
+- Rule: The value of `lang` must be a valid IANA language subtag — a primary-language subtag (e.g., `en`) optionally followed by a region subtag (e.g., `en-gb`).
+- Rule: Keep language tags as short as possible (W3C "golden rule") — only add a region subtag when needed to disambiguate contexts; SRs generally ignore region subtags.
+- Rule: For multi-lingual content, declare the language of each foreign-language passage with `lang` on its wrapping element (e.g., `<span lang="fr">…</span>`) — per SC 3.1.2 Language of Parts (Level AA).
+- Rule: Don't add `lang` to common foreign words that have entered the vernacular (e.g., "croissant", "cappuccino", "et tu Brutus") — SC 3.1.2 explicitly exempts proper names, technical terms, words of indeterminate language, and vernacular borrowings.
+- Rule: Automated checkers detect missing/empty `lang` but cannot validate the value — manually verify the declared language matches the actual content.
+- Rule: Without `lang`, screen readers guess the language and typically fall back to the user's OS default — content in any other language becomes mostly incomprehensible.
 
 ## HTML Elements
 
@@ -243,7 +250,7 @@
 - Element: `<ul>` — maps to the `list` role; conveys the number and order of items to screen readers; older Safari versions and Safari 16+ outside a navigation landmark remove list semantics when `list-style: none` is applied; can be safeguarded with `role="list"`.
 - Element: `<ol>` — maps to the `list` role; semantically appropriate when order matters (e.g., breadcrumbs); shares the same Safari list-semantics caveats as `<ul>`.
 - Element: `<li>` — list item element used inside `<ul>` or `<ol>`.
-- Element: `<span>` — frequently used with the HTML `hidden` attribute to create a visually-hidden text label referenced from another element via `aria-labelledby`; when used purely as an `aria-labelledby` target, prefer `hidden` over a visually-hidden CSS class to avoid double announcement.
+- Element: `<span>` — frequently used with the HTML `hidden` attribute to create a visually-hidden text label referenced from another element via `aria-labelledby`; when used purely as an `aria-labelledby` target, prefer `hidden` over a visually-hidden CSS class to avoid double announcement. Also commonly used to wrap an inline foreign-language passage with a `lang` attribute so screen readers switch pronunciation (per SC 3.1.2).
 - Element: `<svg>` — can be excluded from the accessibility tree (hidden from screen readers) by adding `aria-hidden="true"` when decorative; preferred over CSS pseudo-elements for state-marker icons (e.g., on a disclosure trigger) because it offers more styling control and adapts better to Forced Colors modes. Inline `<svg>` (vs external/`<img>`) is animatable and lets CSS reach the SVG's inner shapes; when placed directly after a form control inside its `<label>`, the SVG can be styled via adjacent-sibling selectors (`input:focus-visible + svg`, `input:disabled + svg`, `input:checked + svg`) to mirror the control's states. For an `<svg>` to participate in accName computation (e.g., as the source of its parent `<button>`'s accName), explicitly set `role="img"` on it — not all browsers expose `<svg>` as an image by default. `aria-label` on the SVG is more robust than `<title>` for cross-browser/SR accName surfacing; `<title>` (if used) must be the SVG's first child and should be reinforced via `aria-labelledby` referencing it.
 - Element: `<summary>` — child of `<details>`; has no implicit ARIA role in the ARIA-in-HTML spec but gets a meaningful computed role only when it is the first child of its `<details>` parent (otherwise treated as a generic `<div>`); may be exposed as "Push Button", "Button", "Summary", or "disclosure triangle" depending on platform/browser/AAPI; interactive element with browser-baked keyboard support (operable via Space and Enter); activating it toggles the `open` attribute on its `<details>` parent; comes with implicit expanded/collapsed state exposed to screen readers; subject to the Children Presentational rule.
 - Element: `<details>` — implicit `group` role; native disclosure-widget container; the first `<summary>` child is the trigger and everything after it inside `<details>` is the controlled content; the browser toggles the `open` attribute to show/hide the content; can only have one trigger (extra `<summary>` elements are ignored as triggers); if no `<summary>` is provided, the browser supplies a generic "Details" label; supports a `name` attribute that, when shared across a group of `<details>`, makes them mutually exclusive (at most one open at a time) without JavaScript; Dragon voice software deprioritises `<details>` compared to buttons/links, making them harder for Dragon users to activate.
@@ -271,6 +278,8 @@
 - Element: `<title>` (SVG) — provides an alternative text description for an `<svg>` (similar to `alt` on `<img>`); MUST be the first child of its parent `<svg>` to be effective; reinforce by referencing it from the parent `<svg>` via `aria-labelledby="…"` so more browser/SR pairings expose it as the SVG's (and the parent button's) accName.
 - Element: `<title>` (document) — defines the page's title; lives inside `<head>`; shown in the browser tab / window title bar (browsers fall back to the URL when missing) and announced as the first piece of information when a screen reader user switches to the tab; required by SC 2.4.2.
 - Element: `<head>` — document head containing meta information including the page's `<title>`.
+- Element: `<html>` — root document element; the `lang` attribute belongs here so it covers everything including `<head>` and is inherited by all descendants.
+- Element: `<q>` — inline quotation; the browser renders the appropriate quotation marks based on the page/quote's declared language (via `lang`).
 - Element: `<table>` — applying `role="none"` suppresses the table's own role AND the semantics of its required children (`<tr>`, `<td>`, etc.) because those children are required and semantically tied; useful for layout tables in legacy codebases.
 
 ## ARIA Roles
@@ -333,6 +342,7 @@
 - Attribute: `download` — `<a>` attribute that triggers a file download instead of navigation.
 - Attribute: `tabindex` — Controls focusability and tab order; `tabindex="0"` makes an otherwise non-focusable element focusable; a negative integer (e.g., `tabindex="-1"`) on an interactive element removes it from the page's tabbing order while keeping it focusable programmatically and via mouse; cannot be used to make an element non-focusable — only `disabled` or `inert` can.
 - Attribute: `inert` — Boolean HTML attribute on a region; the region and all descendants are visually rendered but are NOT exposed to accessibility APIs, are completely non-interactive (not keyboard-accessible), and are not targeted by any user-interaction events (mouse, touch included). Useful for the page content outside a custom modal dialog so that no interaction happens behind the backdrop. The `<dialog>` element provides this behaviour for free when used in modal mode.
+- Attribute: `lang` — HTML attribute identifying the natural language of an element's content via an IANA language subtag (e.g., `en`, `de`, `en-gb`); inherited by descendants; can be overridden on any nested element; required on `<html>` for SC 3.1.1 and on inline wrappers (e.g., `<span lang="fr">`) for SC 3.1.2; also affects browser hyphenation (CSS `hyphens`), `<q>` quotation-mark rendering, auto-translation prompts, spell/grammar checkers, and `:lang()` CSS targeting.
 - Attribute: `hidden` — HTML attribute that hides an element from rendering and removes it from the accessibility tree; when the hidden element is referenced via `aria-labelledby`, the browser still exposes its text as the accessible name for the referencing element — useful for providing a name without leaving the text node as a separate reading stop for screen readers; pairing `hidden` with `aria-hidden="true"` is redundant. Supports two states — the default (`hidden`) state applies `display: none`, while the "until-found" state (`hidden="until-found"`) keeps the content discoverable to browser find-in-page and fragment navigation by using `content-visibility: hidden` instead of `display: none`; in until-found the element still generates a box, so apply padding/borders/backgrounds to a child container; once revealed via find-in-page the content stays visible (no native way to recollapse); `display: none`, `display: contents`, or `display: inline` on the until-found element prevents reveal. Chromium-only support at the time of the lecture; part of the Interop 2025 project.
 - Attribute: `open` — HTML boolean attribute on `<details>` that the browser toggles when the first `<summary>` is activated; controls whether the disclosure widget's content is visible; the browser also rewrites this attribute in the markup when `name`-based exclusive grouping is enforced.
 - Attribute: `name` — HTML attribute; on `<input type="radio">`, groups radio buttons so only one in the group can be selected at a time; on `<details>`, when the same non-empty value is set on multiple elements, enforces that at most one `<details>` in the group is `open` at a time — the browser updates the `open` attributes in markup as it enforces exclusivity, offloading exclusive-accordion behaviour from JavaScript to the browser.
@@ -357,6 +367,8 @@
 - WCAG: SC 2.4.11 Focus Not Obscured (Minimum) (WCAG 2.2, Level AA) — when a UI component receives keyboard focus, the component is not ENTIRELY hidden by author-created content; e.g., an expanded dropdown or a navigation drawer that completely covers focused content can violate this.
 - WCAG: SC 2.4.12 Focus Not Obscured (Enhanced) (WCAG 2.2, Level AAA) — stricter version of SC 2.4.11: NO PART of the focused component may be obscured by author-created content.
 - WCAG: SC 2.4.2 Page Titled (Level A) — "Web pages have titles that describe topic or purpose." Intent: help users find content and orient themselves within it; titles identify the current location without requiring users to read or interpret page content.
+- WCAG: SC 3.1.1 Language of Page (Level A) — "The default human language of each Web page can be programmatically determined." Intent: AT and browsers can render text more accurately when the language is declared via `lang` on `<html>`.
+- WCAG: SC 3.1.2 Language of Parts (Level AA) — "The human language of each passage or phrase in the content can be programmatically determined except for proper names, technical terms, words of indeterminate language, and words or phrases that have become part of the vernacular of the immediately surrounding text." Intent: browsers/AT can correctly present multi-lingual content; declare `lang` on the wrapping element of each foreign-language passage.
 - WCAG: SC 2.5.5 Target Size (Level AAA) — the size of the target for pointer inputs is at least 44 by 44 CSS pixels; ensures users on small touch screens, with limited dexterity, or who struggle with small targets can activate them.
 - WCAG: SC 1.4.13 Content on Hover or Focus (Level AA) — additional content shown on hover/focus must be Perceivable (user knows it appeared), Dismissable (user can close without moving the pointer), and Hoverable (user can hover the revealed content without it disappearing); also account for users who enlarge their pointer.
 - WCAG: SC 3.3.2 Labels or Instructions (Level A) — "Labels or instructions are provided when content requires user input." All form controls (and widgets) that expect user input are required to have a visible label, plus a description where needed.
@@ -434,6 +446,11 @@
 - Pattern: Manual tab-order test — install Accessibility Insights for Web (Chrome), run "Fast Pass" on the page, open "Tab Stops" and enable "Visual helper", then Tab through the page; a path drawn into a hidden drawer means the drawer needs `inert` (or a stronger hide).
 - Pattern: Page title template — `<title>{{ page-title }} – Site Name</title>` so the unique page title leads (visible in the tab, announced first by SRs), with the site-name suffix letting users see/hear which site they're on.
 - Pattern: Match `<h1>` to title — keep the visible `<h1>` identical to the unique part of the `<title>` on every page except possibly the homepage; reinforces page identity for sighted users and AT users alike.
+- Pattern: Declare the page's natural language — set `<html lang="<primary-subtag>">` (e.g., `lang="en"`, `lang="de"`); add a region subtag (e.g., `lang="en-gb"`) only when it disambiguates.
+- Pattern: Mark up foreign-language inline content — wrap the passage in `<span lang="<code>">…</span>` (or any appropriate element with `lang`) so SR switches pronunciation; e.g., `<p>… <span lang="fr">"Parlez-vous Français?"</span></p>`.
+- Pattern: Look up the correct language subtag — open the IANA Language Subtag Registry, search for "Description: <Language>" (e.g., "French"), verify `Type: language`, and use the value of the `Subtag` field (e.g., `fr`).
+- Pattern: Configure VoiceOver (macOS) for foreign-language pronunciation — System Preferences > Accessibility > VoiceOver > Open VoiceOver Utility > Speech; click `+` to add the required language packs.
+- Pattern: Configure NVDA for automatic language switching — Insert+N for the NVDA menu > Preferences > Settings > Speech; enable "Automatic Language Switching" and "Automatic Dialect switching"; click "Change" next to Synthesizer to switch the TTS engine (e.g., to eSpeak NG) if the current one doesn't switch languages automatically.
 
 ## Complex Components
 
@@ -723,6 +740,10 @@
 - Anti-pattern: Vertical bar `|` (or other special characters) as a title separator — screen readers can announce it as "vertical bar"; prefer a simple dash or en-dash.
 - Anti-pattern: Reusing the same `<title>` across multiple pages of a site — users can't tell which tab is which, search results collapse, page-change detection becomes unreliable.
 - Anti-pattern: A `<title>` that doesn't describe the page's topic or purpose — fails SC 2.4.2 even if a `<title>` is present.
+- Anti-pattern: Missing `lang` on `<html>` — SR falls back to the user's OS default language; foreign-language content is pronounced incomprehensibly; fails SC 3.1.1 (top-5 most common a11y failure per the 2023 WebAIM Million Report, 18.6% of homepages).
+- Anti-pattern: Setting `lang` on `<body>` instead of `<html>` — leaves `<head>` (including `<title>`) outside the declared language.
+- Anti-pattern: Over-specifying language tags with unneeded region subtags — adds noise that SRs ignore anyway; add a region subtag only when it disambiguates contexts.
+- Anti-pattern: Failing to mark up foreign-language passages inside an otherwise single-language page — fails SC 3.1.2 and forces SRs to mispronounce the foreign text.
 
 ## Decision Rules
 
@@ -775,6 +796,8 @@
 - Decision: Hide the `<nav>` vs hide the nav content — always hide the CONTENT (`<ul>` or wrapper `<div>`) and keep the `<nav>` landmark in the page so it stays discoverable.
 - Decision: Where to place the site name in a page title — append AFTER the unique page title (`Page Title – Site Name`), never prepend, so the unique identifier leads.
 - Decision: When `<h1>` may diverge from the unique part of `<title>` — generally on the homepage, where the H1 can describe the primary content (e.g., "Latest blog posts") while the title is just the site name; everywhere else they should match.
+- Decision: Primary subtag only vs primary-plus-region in `lang` — start with the primary subtag (e.g., `en`); add a region subtag (e.g., `en-gb`) only when it disambiguates between contexts (W3C "golden rule" — shortest tag that works).
+- Decision: `lang` on `<html>` vs `lang` on individual elements — set on `<html>` for the document's primary language; override on individual elements/spans for foreign-language passages inside the document.
 
 ## Keyboard Behaviour
 
@@ -873,6 +896,10 @@
 - AT: Missing-title fallback — when `<title>` is absent or empty, browsers display the URL and SRs announce nothing distinctive; the user must navigate into the page to learn what it's about.
 - AT: Page-title change detection — because the title changes when the page changes, SR users can tell when navigation has actually completed and when the page is now something different.
 - AT: Special-character announcements in titles — characters like the vertical bar `|` get spoken (often as "vertical bar"), creating noisy and unhelpful announcements; prefer a simple dash or en-dash separator.
+- AT: Default-language guess — when `lang` is missing, screen readers guess the page's language and typically fall back to the user's OS default; non-matching content is then pronounced with the wrong phonetics.
+- AT: VoiceOver language-pack dependency (macOS) — VoiceOver may need additional language packs installed manually via VoiceOver Utility > Speech > `+` to pronounce non-default languages correctly.
+- AT: NVDA automatic language switching — NVDA's "Automatic Language Switching" / "Automatic Dialect switching" settings (Preferences > Settings > Speech) must be enabled for the SR to respect `lang` changes; the active TTS engine must also support the target languages (e.g., eSpeak NG supports automatic language switching).
+- AT: `lang` affects more than SR pronunciation — browsers use it for automatic hyphenation (CSS `hyphens`), `<q>` quotation-mark rendering, auto-translation prompts (e.g., Chrome's Google Translate), spell/grammar checkers, and `:lang()` CSS targeting; some search engines also let users restrict results by language.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -922,6 +949,11 @@
 - Tool: Hidde De Vries' "Focus trap" article — walks through the focus-trap logic (collect focusables, cache first+last, intercept Tab/Shift+Tab) with a reusable JS snippet.
 - Tool: Adrian Roselli's article on initial focus in modal dialogs — empirical comparison of where to move focus in a dialog; useful starting point for the focus-on-open decision in drawers/modals.
 - Tool: Léonie Watson's personal site (Tetralogical) — example of matching each page's `<h1>` to the unique part of its `<title>`, with the homepage as the typical exception.
+- Tool: IANA Language Subtag Registry — long text file (~8,000 entries) listing all valid language subtags; search for "Description: <Language>" and use the `Subtag` value from records of type `language`.
+- Tool: WebAIM Million Report (2023) — annual a11y audit; missing document language is one of the top-5 most common failures (18.6% of homepages).
+- Tool: VoiceOver Utility (macOS) — System Preferences > Accessibility > VoiceOver > Open VoiceOver Utility > Speech lets you install additional language voices for foreign-language pronunciation.
+- Tool: NVDA Speech settings — Preferences > Settings > Speech holds "Automatic Language Switching", "Automatic Dialect switching", and the Synthesizer (TTS engine) picker.
+- Tool: eSpeak NG — TTS engine usable with NVDA that supports automatic language switching when the document language is declared.
 - Tool: Accessibility Insights for Windows — desktop application for inspecting how content is exposed in the accessibility tree (used in the lecture to demonstrate that a heading with `role="none"` is reported as plain text vs a heading exposed as a heading).
 - Tool: Android TalkBack — Android touch-screen screen reader that supports "explore by touch" navigation: users drag their finger across the screen to hear what is directly underneath.
 
@@ -970,6 +1002,11 @@
 - Term: Focus trap — JS-managed mechanism that keeps keyboard focus inside a region (typically a modal dialog or drawer) by redirecting Tab from the last focusable to the first and Shift+Tab from the first to the last.
 - Term: In-flow mobile navigation — a mobile-nav pattern where the toggled-open navigation takes up its natural place in the page layout (rather than overlaying it like a drawer).
 - Term: Page title — the text inside the `<title>` element that identifies the page; shown by browsers in the tab / window title bar (falling back to the URL when missing) and announced first by screen readers when a user switches tabs.
+- Term: Language subtag — a segment of an ISO 639-1 / IANA language tag (e.g., `en`, `gb`); the IANA Language Subtag Registry defines all valid subtags.
+- Term: Primary-language subtag — the first subtag in a language tag (e.g., `en` in `en-gb`); identifies the language itself.
+- Term: Region subtag — an optional secondary subtag that associates the language with a particular region (e.g., `gb` in `en-gb`); generally ignored by screen readers.
+- Term: Language pack — an installable voice/language module that lets a screen reader pronounce a given language correctly (VoiceOver requires manual installation for some languages).
+- Term: TTS engine / speech synthesizer — software that converts text to spoken audio for a screen reader; some (e.g., eSpeak NG) support automatic language switching when the document language is declared.
 - Term: Explore by touch — per the Material Design Accessibility Guidelines, "Touch interface screen readers allow users to run their finger over the screen to hear what is directly underneath. This provides the user with a quick sense of an entire interface."
 - Term: Inclusive hide (for form controls) — visually hiding a native form control while keeping it within the viewport in its natural position (via `position: absolute; opacity: 0`, sometimes enlarged with relative width/height) so touch screen-reader users can still find it by haptics.
 - Term: Accessible name (accName) — a string of text programmatically associated with an element and exposed by the browser to assistive technologies via the accessibility tree; provides a label for the element to AT users.

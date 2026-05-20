@@ -217,6 +217,14 @@
 - Rule: Decide between trap-focus and close-on-focus-leave for the drawer via user testing — don't assume one is always right.
 - Rule: When focus is NOT trapped, close the drawer when focus moves past the last focusable element (Tab on the last element prevents default and closes the drawer, returning focus to the nav toggle).
 - Rule: Manually test the drawer's hide state by tabbing through the page — if focus reaches invisible drawer items, the hide isn't strong enough (the drawer isn't `inert` / `hidden` / `display: none`).
+- Rule: Every page must have a non-empty `<title>` element inside `<head>` (SC 2.4.2 Page Titled, Level A).
+- Rule: A page title must describe the topic or primary purpose of the page — automated checkers catch missing/empty `<title>` but not descriptiveness; review manually.
+- Rule: Page titles should be unique within the site so users can distinguish open tabs, search results, and site-map entries.
+- Rule: A page title should make sense out of context (in a screen reader, a site map, or a list of search results).
+- Rule: Page titles should be short and concise.
+- Rule: Avoid special characters in page titles (e.g., the vertical bar `|`) that cause screen readers to make weird/awkward announcements; prefer a simple dash or en-dash.
+- Rule: When prefixing/appending the site name in a title, place the UNIQUE page title FIRST (e.g., `Page Title – Site Name`) so it stays visible in the browser tab and is announced by screen readers before the site name.
+- Rule: The page's `<h1>` should match the unique part of the `<title>` — they serve the same purpose; typical exception is the homepage, where the `<h1>` may describe the primary content (e.g., "Latest blog posts") while the title is just the site name.
 
 ## HTML Elements
 
@@ -261,6 +269,8 @@
 - Element: `<a>` (with `href`) — accName computation order: `aria-labelledby` → `aria-label` → element's content → `title`; when a higher-priority method names the link, `title` (if present) is meant to become the accDesc, but support is inconsistent.
 - Element: Sectioning / grouping elements (`<section>`, `<nav>`, `<header>`, `<aside>`, `<footer>`, etc.) — accName computation order: `aria-labelledby` → `aria-label` → `title`.
 - Element: `<title>` (SVG) — provides an alternative text description for an `<svg>` (similar to `alt` on `<img>`); MUST be the first child of its parent `<svg>` to be effective; reinforce by referencing it from the parent `<svg>` via `aria-labelledby="…"` so more browser/SR pairings expose it as the SVG's (and the parent button's) accName.
+- Element: `<title>` (document) — defines the page's title; lives inside `<head>`; shown in the browser tab / window title bar (browsers fall back to the URL when missing) and announced as the first piece of information when a screen reader user switches to the tab; required by SC 2.4.2.
+- Element: `<head>` — document head containing meta information including the page's `<title>`.
 - Element: `<table>` — applying `role="none"` suppresses the table's own role AND the semantics of its required children (`<tr>`, `<td>`, etc.) because those children are required and semantically tied; useful for layout tables in legacy codebases.
 
 ## ARIA Roles
@@ -346,6 +356,7 @@
 - WCAG: SC 3.2.4 Consistent Identification (Level AA) — "Components that have the same functionality within a set of Web pages are identified consistently." Two or more components with the same functionality must share the same accessible name; giving same-function components different accNames is a typical failure mode.
 - WCAG: SC 2.4.11 Focus Not Obscured (Minimum) (WCAG 2.2, Level AA) — when a UI component receives keyboard focus, the component is not ENTIRELY hidden by author-created content; e.g., an expanded dropdown or a navigation drawer that completely covers focused content can violate this.
 - WCAG: SC 2.4.12 Focus Not Obscured (Enhanced) (WCAG 2.2, Level AAA) — stricter version of SC 2.4.11: NO PART of the focused component may be obscured by author-created content.
+- WCAG: SC 2.4.2 Page Titled (Level A) — "Web pages have titles that describe topic or purpose." Intent: help users find content and orient themselves within it; titles identify the current location without requiring users to read or interpret page content.
 - WCAG: SC 2.5.5 Target Size (Level AAA) — the size of the target for pointer inputs is at least 44 by 44 CSS pixels; ensures users on small touch screens, with limited dexterity, or who struggle with small targets can activate them.
 - WCAG: SC 1.4.13 Content on Hover or Focus (Level AA) — additional content shown on hover/focus must be Perceivable (user knows it appeared), Dismissable (user can close without moving the pointer), and Hoverable (user can hover the revealed content without it disappearing); also account for users who enlarge their pointer.
 - WCAG: SC 3.3.2 Labels or Instructions (Level A) — "Labels or instructions are provided when content requires user input." All form controls (and widgets) that expect user input are required to have a visible label, plus a description where needed.
@@ -421,6 +432,8 @@
 - Pattern: Focus trap inside a drawer/dialog — `querySelectorAll` the focusable elements (`a[href]`, `button`, `input`, `select`, `textarea`, etc.), cache first + last; on `keydown` Tab, if focus is on the last move it to the first; on Shift+Tab, if focus is on the first move it to the last; `preventDefault` on these jumps (per Hidde De Vries' snippet).
 - Pattern: Close-on-focus-leave (non-trapping) drawer — on Tab from the last focusable inside the drawer, `preventDefault` and close the drawer (returning focus to the nav toggle) instead of letting focus escape.
 - Pattern: Manual tab-order test — install Accessibility Insights for Web (Chrome), run "Fast Pass" on the page, open "Tab Stops" and enable "Visual helper", then Tab through the page; a path drawn into a hidden drawer means the drawer needs `inert` (or a stronger hide).
+- Pattern: Page title template — `<title>{{ page-title }} – Site Name</title>` so the unique page title leads (visible in the tab, announced first by SRs), with the site-name suffix letting users see/hear which site they're on.
+- Pattern: Match `<h1>` to title — keep the visible `<h1>` identical to the unique part of the `<title>` on every page except possibly the homepage; reinforces page identity for sighted users and AT users alike.
 
 ## Complex Components
 
@@ -705,6 +718,11 @@
 - Anti-pattern: Hiding an off-canvas drawer with only CSS positioning/transforms (no `inert` / `hidden` / `display: none` / `visibility: hidden`) — keyboard and SR users can still reach the invisible items.
 - Anti-pattern: Trapping focus inside a drawer without exposing the container as `role="dialog"` — SR users don't get the modal context that explains why focus is being held.
 - Anti-pattern: Icon-only mobile-nav toggle (no visible text label) — less inclusive than a labelled icon button; pair the icon with a "Navigation" text label and `aria-hidden="true"` on the icon.
+- Anti-pattern: Missing or empty `<title>` — browsers fall back to displaying the full URL; SR users hear nothing distinctive when switching to the tab; user can't identify the page without navigating into it.
+- Anti-pattern: Site-name-first title pattern (e.g., `Site Name | Page Title`) — every page makes users listen past or scan past the site name before the unique identifier; especially noisy in tab lists and SR announcements.
+- Anti-pattern: Vertical bar `|` (or other special characters) as a title separator — screen readers can announce it as "vertical bar"; prefer a simple dash or en-dash.
+- Anti-pattern: Reusing the same `<title>` across multiple pages of a site — users can't tell which tab is which, search results collapse, page-change detection becomes unreliable.
+- Anti-pattern: A `<title>` that doesn't describe the page's topic or purpose — fails SC 2.4.2 even if a `<title>` is present.
 
 ## Decision Rules
 
@@ -755,6 +773,8 @@
 - Decision: Drawer container role — `role="dialog"` if you trap focus inside the drawer; `role="group"` if you don't trap; the role must match the focus behaviour so SR users understand whether their focus will be held.
 - Decision: Focus trap vs close-on-focus-leave — let user testing decide; trapping is the modal-dialog convention but can confuse some users; closing on focus-leave keeps users in the natural page flow.
 - Decision: Hide the `<nav>` vs hide the nav content — always hide the CONTENT (`<ul>` or wrapper `<div>`) and keep the `<nav>` landmark in the page so it stays discoverable.
+- Decision: Where to place the site name in a page title — append AFTER the unique page title (`Page Title – Site Name`), never prepend, so the unique identifier leads.
+- Decision: When `<h1>` may diverge from the unique part of `<title>` — generally on the homepage, where the H1 can describe the primary content (e.g., "Latest blog posts") while the title is just the site name; everywhere else they should match.
 
 ## Keyboard Behaviour
 
@@ -849,6 +869,10 @@
 - AT: Empty `<nav>` landmark — AT users who navigate to a landmark expect content there; if the landmark only contains hidden elements they land in an empty region. Placing the toggle INSIDE the landmark fixes this.
 - AT: AT users navigate by landmarks — they don't "feverishly tab" through pages hoping to find content (per Scott O'Hara); hiding the landmark itself meaningfully degrades usability.
 - AT: Drawer dialog announcement — when focus moves to the Close button inside a `role="dialog"` drawer, SR announces "Close, [drawer name], dialog"; with `role="group"` it announces "Close, [drawer name], group". The drawer's accName comes from `aria-labelledby` referencing the nav toggle.
+- AT: Page-title announcement — when a screen-reader user switches to a browser tab, the page's `<title>` is the FIRST thing announced; it identifies the page and sets expectations for its content.
+- AT: Missing-title fallback — when `<title>` is absent or empty, browsers display the URL and SRs announce nothing distinctive; the user must navigate into the page to learn what it's about.
+- AT: Page-title change detection — because the title changes when the page changes, SR users can tell when navigation has actually completed and when the page is now something different.
+- AT: Special-character announcements in titles — characters like the vertical bar `|` get spoken (often as "vertical bar"), creating noisy and unhelpful announcements; prefer a simple dash or en-dash separator.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -897,6 +921,7 @@
 - Tool: Scott O'Hara's "(Navigation) Landmark Discoverability" — article on why hiding the `<nav>` landmark or placing the toggle outside it degrades discoverability for AT users.
 - Tool: Hidde De Vries' "Focus trap" article — walks through the focus-trap logic (collect focusables, cache first+last, intercept Tab/Shift+Tab) with a reusable JS snippet.
 - Tool: Adrian Roselli's article on initial focus in modal dialogs — empirical comparison of where to move focus in a dialog; useful starting point for the focus-on-open decision in drawers/modals.
+- Tool: Léonie Watson's personal site (Tetralogical) — example of matching each page's `<h1>` to the unique part of its `<title>`, with the homepage as the typical exception.
 - Tool: Accessibility Insights for Windows — desktop application for inspecting how content is exposed in the accessibility tree (used in the lecture to demonstrate that a heading with `role="none"` is reported as plain text vs a heading exposed as a heading).
 - Tool: Android TalkBack — Android touch-screen screen reader that supports "explore by touch" navigation: users drag their finger across the screen to hear what is directly underneath.
 
@@ -944,6 +969,7 @@
 - Term: Scrim — the translucent backdrop layer behind a navigation drawer (or modal) that visually dims the obscured page content.
 - Term: Focus trap — JS-managed mechanism that keeps keyboard focus inside a region (typically a modal dialog or drawer) by redirecting Tab from the last focusable to the first and Shift+Tab from the first to the last.
 - Term: In-flow mobile navigation — a mobile-nav pattern where the toggled-open navigation takes up its natural place in the page layout (rather than overlaying it like a drawer).
+- Term: Page title — the text inside the `<title>` element that identifies the page; shown by browsers in the tab / window title bar (falling back to the URL when missing) and announced first by screen readers when a user switches tabs.
 - Term: Explore by touch — per the Material Design Accessibility Guidelines, "Touch interface screen readers allow users to run their finger over the screen to hear what is directly underneath. This provides the user with a quick sense of an entire interface."
 - Term: Inclusive hide (for form controls) — visually hiding a native form control while keeping it within the viewport in its natural position (via `position: absolute; opacity: 0`, sometimes enlarged with relative width/height) so touch screen-reader users can still find it by haptics.
 - Term: Accessible name (accName) — a string of text programmatically associated with an element and exposed by the browser to assistive technologies via the accessibility tree; provides a label for the element to AT users.

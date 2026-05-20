@@ -232,6 +232,34 @@
 - Rule: Don't add `lang` to common foreign words that have entered the vernacular (e.g., "croissant", "cappuccino", "et tu Brutus") — SC 3.1.2 explicitly exempts proper names, technical terms, words of indeterminate language, and vernacular borrowings.
 - Rule: Automated checkers detect missing/empty `lang` but cannot validate the value — manually verify the declared language matches the actual content.
 - Rule: Without `lang`, screen readers guess the language and typically fall back to the user's OS default — content in any other language becomes mostly incomprehensible.
+- Rule: All non-text content presented to the user must have a text alternative that serves the equivalent purpose (SC 1.1.1 Level A); the value of the alt text is determined by how well it serves the image's equivalent purpose.
+- Rule: The `alt` attribute is HTML's native image naming mechanism — unless it is missing, and unless ARIA overrides it, its value becomes the `<img>`'s accessible name.
+- Rule: The `alt` attribute only works on `<img>` — applying it to other elements has no effect, even when those elements are assigned `role="img"`; expose other elements as images via `aria-label` or `aria-labelledby`.
+- Rule: For a responsive `<picture>` element, the browser uses the `alt` on the fallback `<img>` inside it as the text alternative for whichever responsive source is rendered.
+- Rule: Categorise every image as one of five types — unessential (decorative or redundant), image of text, complex image, functional image, or informative image — and pick the alt-text strategy that fits the type.
+- Rule: Always specify the `alt` attribute on every `<img>`, even when empty — missing `alt` makes some screen readers (e.g., VoiceOver) announce the file name from `src` while others (JAWS, NVDA) ignore the image entirely.
+- Rule: For an unessential image (decorative or redundant), set `alt=""` ("nulled") so screen readers skip it; even a single space breaks the empty alt — the image is then announced as unnamed.
+- Rule: Alt text is context-dependent — describe what the image is meant to communicate IN the context it is used; the same photo on different pages can warrant different alt text.
+- Rule: When an image expresses an emotion (humor, anger, sadness), the alt text should convey the same emotion so AT users can experience the same feeling — emotion makes some "decorative" images not actually decorative.
+- Rule: Include cultural and demographic detail (skin tone, ethnicity, religious dress, etc.) in alt text when it is relevant to the page's message — without it, blind users may default to "someone like me" (per Léonie Watson).
+- Rule: For an image of text, the alt value must contain the same words as the image itself; this is one of the few cases where long alt text is appropriate.
+- Rule: Avoid images of text — use real text styled with CSS so users can customise text size, color, line spacing, and font family; exceptions are logotypes and contexts where customisation is built in (per SC 1.4.5 and SC 1.4.9).
+- Rule: For a complex image (graph, chart, infographic, map), pair the short alt with an extended description or an alternative presentation of the same information.
+- Rule: For a functional image (image used as the label for a link or button), the alt should describe the function — the destination or the action — not the image's contents.
+- Rule: For an image inside a link, the alt should describe the link destination (e.g., a logo's alt is "The personal website of Jane Doe — Home", not "Logo").
+- Rule: When an `<img>` sits inside a link or button alongside text, the browser concatenates the image's alt with the sibling text to compute the parent's accessible name.
+- Rule: For an image inside a button, the alt should describe the action the button initiates (e.g., a magnifier icon labelling a Search button takes `alt="Search"`, not `alt="magnifier"`).
+- Rule: For an informative image, the alt should describe the information the image is meant to communicate; ask why the image is being used in this context to decide what to describe.
+- Rule: Keep alt text short and concise — as short as possible, but as long as it needs to be; there is no character limit.
+- Rule: End alt text with a period so screen readers pause naturally after the last word; in longer alt text, use punctuation where appropriate to avoid a run-on string.
+- Rule: Don't start alt text with "Image of" or "Photo of" — the `<img>` role is already announced (VoiceOver "Image", JAWS "graphic", NVDA "Graphic"), so the prefix is redundant.
+- Rule: Exception to the "don't mention the image type" guideline — name a relevant special type (sketch, illustration, water color painting) at the start or end of the alt when the style itself is part of the message.
+- Rule: Never use the image's file name as alt text — file names are not the image's purpose.
+- Rule: Don't use the `alt` attribute to provide image attribution or credit — attribution belongs in surrounding text or in `<figcaption>`.
+- Rule: `<figcaption>` is editorial or illustrative — it must NOT repeat the alt text; alt describes what the image represents, figcaption relates the image back to its surrounding context.
+- Rule: `<figcaption>` is not a substitute for `alt` — if the `<figure>` contains an `<img>`, the image still needs its own alt; otherwise the figcaption is describing nothing.
+- Rule: AI cannot yet replace humans for writing alt text — AI describes what an image contains but cannot communicate purpose, emotion, or why the author chose that specific image.
+- Rule: Manually test alt text as part of every accessibility review — disable images on the page (e.g., via the Web Developer extension) and verify the alt text alone communicates the same information.
 
 ## HTML Elements
 
@@ -281,6 +309,9 @@
 - Element: `<html>` — root document element; the `lang` attribute belongs here so it covers everything including `<head>` and is inherited by all descendants.
 - Element: `<q>` — inline quotation; the browser renders the appropriate quotation marks based on the page/quote's declared language (via `lang`).
 - Element: `<table>` — applying `role="none"` suppresses the table's own role AND the semantics of its required children (`<tr>`, `<td>`, etc.) because those children are required and semantically tied; useful for layout tables in legacy codebases.
+- Element: `<picture>` — responsive image element; contains one or more `<source>` children and one fallback `<img>`; the browser uses the `alt` attribute on the fallback `<img>` as the text alternative for whichever source is rendered.
+- Element: `<source>` — child of `<picture>`; supplies `media` and `srcset` to select the responsive image source; has no `alt` of its own.
+- Element: `<object>` — one of seven ways to embed an SVG on a page; not announced as an image by default — explicit `role="img"` is required to surface image semantics; the `alt` attribute does NOT work on `<object>` even when `role="img"` is set, so name it via `aria-labelledby` or `aria-label` and describe it via `aria-describedby`; content between the opening and closing tags serves as both a rendered fallback when the embedded resource fails to load AND as the AT-exposed extended description when referenced via `aria-describedby`.
 
 ## ARIA Roles
 
@@ -346,14 +377,19 @@
 - Attribute: `hidden` — HTML attribute that hides an element from rendering and removes it from the accessibility tree; when the hidden element is referenced via `aria-labelledby`, the browser still exposes its text as the accessible name for the referencing element — useful for providing a name without leaving the text node as a separate reading stop for screen readers; pairing `hidden` with `aria-hidden="true"` is redundant. Supports two states — the default (`hidden`) state applies `display: none`, while the "until-found" state (`hidden="until-found"`) keeps the content discoverable to browser find-in-page and fragment navigation by using `content-visibility: hidden` instead of `display: none`; in until-found the element still generates a box, so apply padding/borders/backgrounds to a child container; once revealed via find-in-page the content stays visible (no native way to recollapse); `display: none`, `display: contents`, or `display: inline` on the until-found element prevents reveal. Chromium-only support at the time of the lecture; part of the Interop 2025 project.
 - Attribute: `open` — HTML boolean attribute on `<details>` that the browser toggles when the first `<summary>` is activated; controls whether the disclosure widget's content is visible; the browser also rewrites this attribute in the markup when `name`-based exclusive grouping is enforced.
 - Attribute: `name` — HTML attribute; on `<input type="radio">`, groups radio buttons so only one in the group can be selected at a time; on `<details>`, when the same non-empty value is set on multiple elements, enforces that at most one `<details>` in the group is `open` at a time — the browser updates the `open` attributes in markup as it enforces exclusivity, offloading exclusive-accordion behaviour from JavaScript to the browser.
-- Attribute: `title` — Discouraged by the HTML spec as a way to provide accessible names — user agents often require a pointing device (mouse) to expose `title` as a tooltip, excluding keyboard-only and touch-only users; can be used to indicate the purpose of a landmark such as a `<search>` element when no visible label is available, but the only currently unproblematic use case is providing an accessible name to an `<iframe>`.
-- Attribute: `alt` — `<img>`'s accessible-name attribute; the alt-text value becomes the image's accessible name; an empty `alt` excludes the image from the accessibility tree (decorative).
+- Attribute: `title` — Discouraged by the HTML spec as a way to provide accessible names — user agents often require a pointing device (mouse) to expose `title` as a tooltip, excluding keyboard-only and touch-only users; can be used to indicate the purpose of a landmark such as a `<search>` element when no visible label is available, but the only currently unproblematic use case is providing an accessible name to an `<iframe>`. CMSs like Wordpress commonly expose both Alt and Title fields when uploading an image — users often populate both with the same string, causing duplicate announcements; Firefox additionally has a bug where an empty `alt` plus a non-empty `title` on `<img>` surfaces the title as the accName, defeating the purpose of `alt=""` for decoration.
+- Attribute: `alt` — `<img>`'s accessible-name attribute; the alt-text value becomes the image's accessible name; an empty `alt` (`alt=""`) excludes the image from the accessibility tree (decorative); a single space is NOT empty and the image is then announced unnamed. Strategy is type-driven — decorative/redundant `alt=""`; image of text → the exact same words as the image; complex image → short alt + extended description elsewhere; functional image → the function (destination or action), not the icon; informative image → the information communicated in context. Only works on `<img>`; on other elements (even with `role="img"`) it has no effect — name them via `aria-label`/`aria-labelledby`. `alt` must always be present on `<img>` even when empty; when absent, VoiceOver falls back to announcing the `src` file name while JAWS and NVDA ignore the image.
 - Attribute: `value` — provides the accessible name for some form controls such as `<input type="submit">` (e.g., `value="Send message"` → accName "Send message"); on `<input type="submit | button | reset">` it sits BELOW `<label>` in the accName order, and when overridden by `aria-labelledby`/`aria-label`/`<label>` the `value` is repurposed as the accessible description.
 - Attribute: `placeholder` — text shown in an empty text-style input; sits at the BOTTOM of the accName fallback order (below `title`) for text-style `<input>`, `<select>`, and `<textarea>`; do not rely on it as a substitute for `<label>`.
 - Attribute: `aria-description` (ARIA 1.3) — Provides an accessible description as a string of text (inline), same purpose as `aria-describedby` but without an `id` reference; not currently fully implemented in all browsers; may not translate well (like `aria-label`); prefer `aria-describedby` when the description exists in the DOM.
 - Attribute: `aria-details` — References one or more elements (by `id`) that provide additional information about the element; the SR announces only the PRESENCE of the extended info, never its contents; does NOT contribute to the accDesc computation; does NOT move focus; use it as a "heads-up" pointer to structured/navigable info (e.g., a `<details>` explaining a CVV field) — not as an accDesc.
 - Attribute: `for` — `<label>` attribute referencing an input's `id` to programmatically associate the label with the input and expose its text as the input's accessible name.
 - Attribute: `id` — HTML attribute used to be referenced by `<label for>`, `aria-labelledby`, `aria-describedby`, or `aria-controls` for programmatic association.
+- Attribute: `src` — `<img>` attribute pointing to the image file URL; when `alt` is absent, VoiceOver falls back to announcing the file name from `src`.
+- Attribute: `srcset` — attribute on `<img>` or on `<picture>`'s child `<source>` listing responsive image candidates.
+- Attribute: `media` — attribute on `<source>` inside `<picture>` specifying the media query that gates the source (e.g., `media="(min-width: 1024px)"`).
+- Attribute: `data` — `<object>` attribute pointing to the embedded resource (e.g., the SVG file URL).
+- Attribute: `type` — `<object>` attribute specifying the MIME type of the embedded resource (e.g., `image/svg+xml`).
 
 ## WCAG Success Criteria
 
@@ -372,6 +408,9 @@
 - WCAG: SC 2.5.5 Target Size (Level AAA) — the size of the target for pointer inputs is at least 44 by 44 CSS pixels; ensures users on small touch screens, with limited dexterity, or who struggle with small targets can activate them.
 - WCAG: SC 1.4.13 Content on Hover or Focus (Level AA) — additional content shown on hover/focus must be Perceivable (user knows it appeared), Dismissable (user can close without moving the pointer), and Hoverable (user can hover the revealed content without it disappearing); also account for users who enlarge their pointer.
 - WCAG: SC 3.3.2 Labels or Instructions (Level A) — "Labels or instructions are provided when content requires user input." All form controls (and widgets) that expect user input are required to have a visible label, plus a description where needed.
+- WCAG: SC 1.1.1 Non-text Content (Level A) — "All non-text content that is presented to the user has a text alternative that serves the equivalent purpose…" Exception: "If non-text content is pure decoration, is used only for visual formatting, or is not presented to users, then it is implemented in a way that it can be ignored by assistive technology." The value of the alt text is determined by how well it serves the image's equivalent purpose.
+- WCAG: SC 1.4.5 Images of Text (Level AA) — "If the technologies being used can achieve the visual presentation, text is used to convey information rather than images of text except for the following: Customizable: The image of text can be visually customized to the user's requirements; Essential: A particular presentation of text is essential to the information being conveyed." Note: Logotypes (text that is part of a logo or brand name) are considered essential. Enables users who require particular text customisation (size, color, line spacing, font family) to adjust the presentation.
+- WCAG: SC 1.4.9 Images of Text (No Exception) (Level AAA) — "Images of text are only used for pure decoration or where a particular presentation of text is essential to the information being conveyed." Note: Logotypes are considered essential. Stricter version of SC 1.4.5.
 
 ## Patterns & Recipes
 
@@ -451,6 +490,20 @@
 - Pattern: Look up the correct language subtag — open the IANA Language Subtag Registry, search for "Description: <Language>" (e.g., "French"), verify `Type: language`, and use the value of the `Subtag` field (e.g., `fr`).
 - Pattern: Configure VoiceOver (macOS) for foreign-language pronunciation — System Preferences > Accessibility > VoiceOver > Open VoiceOver Utility > Speech; click `+` to add the required language packs.
 - Pattern: Configure NVDA for automatic language switching — Insert+N for the NVDA menu > Preferences > Settings > Speech; enable "Automatic Language Switching" and "Automatic Dialect switching"; click "Change" next to Synthesizer to switch the TTS engine (e.g., to eSpeak NG) if the current one doesn't switch languages automatically.
+- Pattern: Provide alt text by image type — set `alt=""` for decorative/redundant images; for an image of text copy the words verbatim; for an informative image describe the information IN CONTEXT; for a functional image describe the destination/action; for a complex image use a short alt + extended description elsewhere.
+- Pattern: Hide a decorative image — `<img src="…" alt="">` (canonical); equivalent options are `role="none"`, `aria-hidden="true"`, or omitting alt entirely; the empty-string approach is preferred because it satisfies the "alt must be present" rule and is the simplest signal of decoration.
+- Pattern: Responsive image with alt — `<picture><source media="(min-width: 1024px)" srcset="landscape.jpg"><img src="portrait.jpg" alt="The photo's text description."></picture>`; the browser uses the fallback `<img>`'s alt as the accessible name regardless of which source renders.
+- Pattern: Image of text alt — copy the image's text verbatim into `alt`; e.g., `<img src="extra-20-off.png" alt="Extra 20% off. Extra 15% or 10% off select sale & clearance items. Excludes specials. Code: SAVE.">`.
+- Pattern: Complex image via `<object>` with extended description — `<h4 id="HEADING">…</h4><object type="image/svg+xml" data="chart.svg" tabindex="-1" role="img" aria-labelledby="HEADING" aria-describedby="DESC"><p id="DESC">…full text description…</p></object>`; the fallback paragraph doubles as the rendered fallback if the SVG fails to load and as the screen-reader extended description.
+- Pattern: Complex image via `<figure>` + structured `<figcaption>` — give the `<img>` a concise alt; put structured long content (headings, tables, paragraphs) inside `<figcaption>`; the figcaption no longer participates in the figure's accName by default, so reference it via `aria-labelledby` if you want it to also become the figure's name.
+- Pattern: Complex image via `<details>`/`<summary>` (Tetralogical) — place the `<img>` inside `<summary>` and the long description in the remaining `<details>` content; user reveals the description on demand.
+- Pattern: Complex image via separate page — provide an adjacent link to a page that presents the chart's data as text.
+- Pattern: Functional image inside a link — alt describes the destination not the image; e.g., `<img src="logo.png" alt="The personal website of Jane Doe — Home">`.
+- Pattern: Functional image inside a link with sibling text already describing it — leave the image's alt empty so it doesn't add noise; e.g., `<a><img alt=""> Follow me on Twitter</a>`.
+- Pattern: Functional image inside a link with extra meaning — when the icon conveys information beyond the text (e.g., "Opens in new window"), describe that extra information in the alt; e.g., `<a target="_blank">How to meet WCAG Quick Reference <img alt="Opens in new window"></a>` → accName "How to meet WCAG Quick Reference, Opens in new window".
+- Pattern: Functional image inside a button — alt describes the action, not the icon — `<button><img alt="Search"></button>` (not `alt="magnifier"`); `<button><img alt="Print"></button>` (not `alt="printer"`).
+- Pattern: Test alt text via "Disable images" — install the Web Developer toolbar extension; under Images choose "Disable images" and reload; the browser displays each image's alt text where the image used to be — verify the alt alone communicates the image's purpose.
+- Pattern: Inspect alt text in-place — Web Developer toolbar → Images → "Display Alt Attributes" prints each image's alt above the rendered image without disabling rendering.
 
 ## Complex Components
 
@@ -529,6 +582,46 @@
 - SVG-as-accName caveats — needs explicit `role="img"`; `aria-label` on the SVG is more robust than `<title>`; even with `<title>` + `aria-labelledby` reinforcement, VoiceOver paired with Firefox still doesn't surface the icon's name as the button's accName.
 - Author's recommendation — visually-hidden text inside the button (preferably `hidden` + `aria-labelledby`) is the most reliable, translatable, and reader-mode-safe approach; treat the SVG as decorative.
 - Reference — Scott O'Hara's "Contextually Marking up accessible images and SVGs" details how the marking-up choices behave across browser/SR pairings.
+
+### Image
+
+- Definition — `<img>` element used to embed a graphical resource on a page; its accessible name is provided via the `alt` attribute (HTML's native image naming mechanism) and exposed in the accessibility tree.
+- Five image types — unessential (decorative or redundant), image of text, complex image, functional image, informative image; each type calls for a different alt strategy.
+- Decorative image — only purpose is visual decoration (background, border image, blog-post poster image); use `alt=""` so screen readers skip the image.
+- Redundant image — image whose content is already presented in text (e.g., supplemental icon next to identical button text); use `alt=""` to avoid duplicate announcements.
+- Empty alt equivalence — `alt=""`, `role="none"`, and `aria-hidden="true"` all hide an `<img>` from screen readers; pick the empty-string approach as canonical because alt must be present anyway.
+- Empty alt strictness — even a single space breaks the empty alt; the image is then announced but without a meaningful name; the value must be strictly `""`.
+- Missing alt fallback — when alt is absent, VoiceOver announces the file name from `src` (e.g., "df538e8d36e4de35b3f7db406d119c44.jpg image"); JAWS and NVDA ignore the image entirely; always specify alt even when empty.
+- Image of text — alt must contain the same words as the image; one of the few cases where long alt is appropriate; prefer real text styled with CSS to allow user customisation of size/colour/spacing/font.
+- Informative image — alt describes the information the image is meant to communicate IN CONTEXT; the same photo can warrant different alt text on different pages depending on what it's communicating.
+- Functional image — used as the label for a link or button; alt describes the function (destination or action), not the icon (`alt="Search"`, not `alt="magnifier"`).
+- Context matters — decide what to mention vs leave out based on why the image is used in this specific context; describing every detail buries the relevant part (per Jake Archibald, "Writing great alt text").
+- Emotion matters — convey the same emotion in the alt text (humor, sadness, etc.) so AT users experience the same feeling (per Eric Bailey, "Your Image Is Probably Not Decorative"); emotion makes some seemingly-decorative images NOT decorative.
+- Cultural / demographic detail — include skin tone, ethnicity, religious dress, etc., when relevant to the page's message (diversity articles, Black-owned business contexts, Hijab-wearing Muslim doctor) — otherwise blind users default to "someone like me" (per Léonie Watson).
+- Length — as short as possible, as long as needed; no character limit; JAWS chunks alt at 125 characters (excluding spaces) into multiple graphics.
+- Punctuation — end with a period so SR pauses naturally; use commas/periods inside longer alt to break up runs.
+- Don't prefix with "Image of" / "Photo of" — the image role is already announced (VoiceOver "Image", JAWS "graphic", NVDA "Graphic"); exception: name a relevant special type (sketch, illustration, water color painting) when style is part of the message.
+- Don't use the file name as alt — file names are not the image's purpose.
+- Don't use `title` on an `<img>` — duplicate announcements when title duplicates alt, broken-image fallback differs across browsers (Firefox doesn't render `title` in place of a broken image), Firefox bug ignores empty alt and uses title as accName.
+- Don't use alt for attribution — attribution belongs in surrounding text or `<figcaption>`.
+- AI is not a substitute — AI can describe what's IN an image but cannot communicate purpose, emotion, or why the author chose a specific image; alt text remains a human skill (per Adrian Roselli's experiments; per Haben Girma and Dr Cynthia Bennett).
+- Testing — disable images on the page (Web Developer extension) and verify the alt alone tells the story; also enable "Display Alt Attributes" to spot-check each image.
+- accName algorithm — `aria-labelledby` → `aria-label` → `alt` → `title` (when alt absent) → `<figcaption>` (only when alt and title are both absent AND the figure contains only the `<img>` and a `<figcaption>` — though no browser currently exposes the figcaption fallback).
+- Broken-image rendering — when the image fails to load, browsers display a placeholder with the alt text next to it; Chrome and Safari additionally show `title` when alt is absent, but Firefox renders only `alt`.
+
+### Complex image / chart
+
+- Definition — graphs, charts, infographics, maps, or any image whose information cannot be conveyed in a short alt sentence.
+- Strategy — pair a short alt with either an extended description elsewhere, or an alternative presentation of the same data as text.
+- Extended description via `aria-describedby` — give the long description a stable `id` and reference it from the image (or `<object>`) so browsers append the description after name+role for screen readers.
+- Extended description via `<figcaption>` — wrap `<img>` in `<figure>` with concise alt; put structured long content (headings, tables, paragraphs) inside `<figcaption>`; reference it via `aria-labelledby` on the figure if you want the figcaption to become the figure's accName.
+- Extended description via `<details>`/`<summary>` (Tetralogical) — place the `<img>` inside `<summary>` and the long description inside the rest of `<details>`; user reveals the description on demand.
+- Extended description via separate page — link to a page with the chart's data presented as text.
+- `<object>` embedding pattern (Khan Academy 2018 annual report) — `<h4 id="HEADING">…</h4><object type="image/svg+xml" data="chart.svg" tabindex="-1" role="img" aria-labelledby="HEADING" aria-describedby="DESC"><p id="DESC">…full text description…</p></object>`; the fallback paragraph doubles as the rendered fallback when the SVG fails to load AND as the AT-exposed extended description.
+- `<object>` exposure caveat — not announced as an image by default; explicit `role="img"` is required to communicate the image semantics.
+- `<object>` naming caveat — `alt` does not work on `<object>` even with `role="img"`; provide the accName via `aria-labelledby` or `aria-label`; provide the accDesc via `aria-describedby`.
+- Why use `<object>` — embedding SVG via `<object>` is one of seven SVG embedding methods; chosen on the Khan Academy report for performance and flexibility, and because the element supports inner fallback content.
+- Author recommendation — avoid images of text whenever possible; if a complex image is unavoidable, supply BOTH a short alt AND a separately structured alternative presentation rather than cramming everything into alt.
 
 ### Disclosure
 
@@ -744,6 +837,17 @@
 - Anti-pattern: Setting `lang` on `<body>` instead of `<html>` — leaves `<head>` (including `<title>`) outside the declared language.
 - Anti-pattern: Over-specifying language tags with unneeded region subtags — adds noise that SRs ignore anyway; add a region subtag only when it disambiguates contexts.
 - Anti-pattern: Failing to mark up foreign-language passages inside an otherwise single-language page — fails SC 3.1.2 and forces SRs to mispronounce the foreign text.
+- Anti-pattern: `<img alt=" ">` (a single space) — counts as non-empty so the image is announced but has no meaningful name; for decorative images use `alt=""` strictly.
+- Anti-pattern: Starting alt with "Image of" or "Photo of" — duplicates the announced role (VoiceOver "Image", JAWS "graphic", NVDA "Graphic"); add unnecessary noise.
+- Anti-pattern: Using the image file name as alt text — file names are not the image's purpose; SRs may already fall back to reading the file name when alt is absent.
+- Anti-pattern: Missing the `alt` attribute on `<img>` — VoiceOver announces the `src` file name; JAWS and NVDA ignore the image; broken-image fallback shows nothing useful.
+- Anti-pattern: Using alt for image credit / attribution — attribution doesn't serve the image's equivalent purpose; belongs in surrounding text or in `<figcaption>`.
+- Anti-pattern: alt text that repeats the `<figcaption>` (or vice versa) — duplicate announcement; alt describes the image, figcaption is editorial/illustrative.
+- Anti-pattern: Letting AI auto-generate alt without human review — AI describes objects in the image but cannot convey purpose, emotion, or contextual relevance.
+- Anti-pattern: Using `<figcaption>` as a substitute for a missing `alt` — if the `<img>` has no alt, the figure/caption pair doesn't satisfy SC 1.1.1; provide alt regardless.
+- Anti-pattern: Functional-image alt describing the icon ("magnifier") instead of the action ("Search") — voice-control users say the action label, not the icon name.
+- Anti-pattern: Treating images of text as if they were graphics — strips users' ability to customise text size, color, line spacing, and font family; fails SC 1.4.5 unless the image is a logotype or its presentation is essential.
+- Anti-pattern: Hiding a meaningful image with `alt=""`, `aria-hidden="true"`, or `role="none"` to "keep the page quiet" — withholds information from AT users that sighted users get; reserve these techniques for pure decoration only.
 
 ## Decision Rules
 
@@ -798,6 +902,13 @@
 - Decision: When `<h1>` may diverge from the unique part of `<title>` — generally on the homepage, where the H1 can describe the primary content (e.g., "Latest blog posts") while the title is just the site name; everywhere else they should match.
 - Decision: Primary subtag only vs primary-plus-region in `lang` — start with the primary subtag (e.g., `en`); add a region subtag (e.g., `en-gb`) only when it disambiguates between contexts (W3C "golden rule" — shortest tag that works).
 - Decision: `lang` on `<html>` vs `lang` on individual elements — set on `<html>` for the document's primary language; override on individual elements/spans for foreign-language passages inside the document.
+- Decision: Does an image need alt? — every `<img>` must have the `alt` attribute present; whether the VALUE is non-empty depends on the image's type: informative, image of text, complex, and functional images take a non-empty alt; decorative and redundant images take `alt=""`.
+- Decision: Which alt strategy by image type — decorative/redundant → `alt=""`; image of text → exact same words as the image; complex → short alt + extended description elsewhere; functional → the function (destination or action), not the icon; informative → the information communicated IN CONTEXT.
+- Decision: Communicate the presence of an unessential image? — depends on context; some users prefer knowing an image is present even if it adds no information; let context decide whether to announce it or not.
+- Decision: How much to describe in an informative-image alt — base it on why the image is in this context; the same photo can warrant different alt text on different pages.
+- Decision: Where to put extended descriptions for complex images — `aria-describedby` for short flat text; `<figcaption>` (referenced via `aria-labelledby`) for structured content; `<details>`/`<summary>` for opt-in detail; separate page when very long; `<object>` fallback for SVG-embedded charts.
+- Decision: alt vs `<figcaption>` — alt describes what the image represents; figcaption provides editorial/illustrative context that relates the image back to surrounding content; do not duplicate.
+- Decision: Image of text vs real text — prefer real text styled with CSS so users can customise presentation; image of text only for logotypes, presentation-essential content, or contexts that target the SC 1.4.5 customisable/essential exception.
 
 ## Keyboard Behaviour
 
@@ -900,6 +1011,13 @@
 - AT: VoiceOver language-pack dependency (macOS) — VoiceOver may need additional language packs installed manually via VoiceOver Utility > Speech > `+` to pronounce non-default languages correctly.
 - AT: NVDA automatic language switching — NVDA's "Automatic Language Switching" / "Automatic Dialect switching" settings (Preferences > Settings > Speech) must be enabled for the SR to respect `lang` changes; the active TTS engine must also support the target languages (e.g., eSpeak NG supports automatic language switching).
 - AT: `lang` affects more than SR pronunciation — browsers use it for automatic hyphenation (CSS `hyphens`), `<q>` quotation-mark rendering, auto-translation prompts (e.g., Chrome's Google Translate), spell/grammar checkers, and `:lang()` CSS targeting; some search engines also let users restrict results by language.
+- AT: `<img>` role announcement — VoiceOver (macOS) says "Image" after the alt text; JAWS says "graphic" after the alt text; NVDA says "Graphic" before the alt text content; the role is announced for free, making "Image of…" / "Photo of…" prefixes redundant.
+- AT: Missing-alt fallback — VoiceOver announces the file name from `src` (e.g., "df538e8d36e4de35b3f7db406d119c44.jpg image"); JAWS and NVDA ignore the image entirely; always specify alt.
+- AT: JAWS 125-character chunking — JAWS reads alt text in 125-character chunks (excluding spaces); alt exceeding 125 chars is divided into multiple graphics each carrying up to 125 chars of alt beginning where the previous left off.
+- AT: Sibling-text concatenation in accName — when an `<img>` sits inside a link/button alongside text, the browser concatenates the alt with the sibling text to compute the parent's accessible name.
+- AT: Firefox empty-alt + non-empty title bug — Firefox ignores the empty alt and uses `title` as the image's accessible name, defeating the purpose of `alt=""` for decoration; another reason to avoid `title` on `<img>`.
+- AT: Broken-image placeholder shows alt — when an `<img>` fails to load, browsers display a broken-image placeholder next to the alt text (when present), so users on slow networks / data-saver mode still perceive the information.
+- AT: Speech recognition uses alt — when an image doesn't load, voice-control users can speak the image's alt text to trigger the action the image represents.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -956,6 +1074,12 @@
 - Tool: eSpeak NG — TTS engine usable with NVDA that supports automatic language switching when the document language is declared.
 - Tool: Accessibility Insights for Windows — desktop application for inspecting how content is exposed in the accessibility tree (used in the lecture to demonstrate that a heading with `role="none"` is reported as plain text vs a heading exposed as a heading).
 - Tool: Android TalkBack — Android touch-screen screen reader that supports "explore by touch" navigation: users drag their finger across the screen to hear what is directly underneath.
+- Tool: Web Developer extension (Chris Pederick) — Chrome/Firefox toolbar extension; Images tab provides "Disable images" (replace each image with its alt text in-place after a reload) and "Display Alt Attributes" (print each image's alt above the rendered image) for manual alt-text review.
+- Tool: WAI Images tutorial — W3C tutorial demonstrating multiple ways to provide additional descriptions for images, including linking to a separate page and using `<figure>`/`<figcaption>` for structurally-associated long descriptions.
+- Tool: W3C WAI Alt Decision Tree — flowchart guiding authors through choosing alt text for each image type (informative, functional, decorative, image of text, complex, etc.); referenced by Wordpress's image upload hint.
+- Tool: Adrian Roselli's AI-captions experiment — empirical comparison of AI-generated vs human-written alt text, including a reverse experiment that generates images from text descriptions; demonstrates AI's inability to convey purpose, emotion, or contextual relevance.
+- Tool: Tetralogical disclosure-pattern for long image descriptions — `<details>`/`<summary>` containing the `<img>` in the trigger and the long description in the panel; reveals the description on demand.
+- Tool: Wordpress image upload modal — exposes Alt text, Title, Caption, and Description fields; the hint advises describing purpose or leaving alt empty for decoration but does NOT extend the same advice to Title; users commonly populate both with the same value, causing duplicate announcements.
 
 ## Glossary
 
@@ -1018,4 +1142,15 @@
 - Term: Accessible Name and Description Computation algorithm — the W3C-spec-defined algorithm a browser uses to decide which of the available naming methods provides an element's accName, and which (if any) is repurposed as the accDesc.
 - Term: Labelable element — an HTML element that can get its accessible name from a `<label for>`/`id` association; `<button>` is an example (rare but valid).
 - Term: accName priority (formal) — ARIA-first: `aria-labelledby` → `aria-label` → (HTML methods, varying by element).
+- Term: Alternative text / Alt text — text that describes an image to users who can't see it, so they understand its purpose; commonly known as alt text; provided via the `alt` attribute on `<img>`.
+- Term: Equivalent purpose (SC 1.1.1) — the requirement that a text alternative must serve the same purpose as the non-text content it replaces; the value of alt text is measured by how well it does that.
+- Term: Unessential image — image not meant to communicate information that contributes to understanding the page; either decorative or redundant; takes `alt=""`.
+- Term: Decorative image — image whose only purpose is visual decoration (decorative backgrounds, border images, blog-post poster images).
+- Term: Redundant image — image not decorative but unessential because its information is already presented in text (e.g., a supplemental icon next to identical button text).
+- Term: Image of text — text content represented as an image instead of actual text elements (e.g., e-commerce sale graphics, social-media posts of ChatGPT-generated text); alt must contain the same words as the image.
+- Term: Complex image — image whose information cannot be conveyed in a short alt (graphs, charts, infographics, maps); requires an extended description in addition to alt.
+- Term: Functional image — image used as the label for an interactive element (link or button); alt describes the function (destination or action), not the image's contents.
+- Term: Informative image — image that communicates information essential or useful for understanding the page (photos of people, scenery, products); alt describes the information IN THE CONTEXT it is used.
+- Term: Nulled alt — the convention of setting `alt=""` (empty string) to mark an image as decorative or redundant so screen readers skip it.
+- Term: Web Developer toolbar — Chris Pederick's Chrome/Firefox extension that exposes per-domain settings to disable images, display alt attributes, view structural information, and more; central to manual alt-text testing.
 - Term: accName priority (author's recommended) — HTML content → HTML attribute/element → `aria-labelledby` → `aria-label`; almost the reverse of the formal algorithm.

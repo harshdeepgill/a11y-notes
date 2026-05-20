@@ -182,6 +182,27 @@
 - Rule: Per SC 2.5.3 Understanding, place the visible label text at the START of the accessible name — Dragon's heuristic matches elements whose accName starts with the spoken term, even when the rest of the name differs.
 - Rule: Aim for usability beyond WCAG conformance — visually-hidden disambiguators may not be a hard WCAG failure but they make voice-control activation tedious and force unnecessary extra work on disabled users.
 - Rule: Apply the "Shift Left" methodology — name and address accessibility considerations like label/name parity early in the conception phase, in collaboration with content writers, developers, and project managers.
+- Rule: A drop-down navigation is a `<nav>` containing links nested two or more levels deep; its core functionality is showing/hiding nested items when a parent item is activated (disclosure-widget behaviour applied to navigation).
+- Rule: A parent navigation item that toggles a nested list MUST be a button, not a link — unless the parent also needs to navigate to a separate page; in that case use BOTH a link and a separate `<button>` next to it.
+- Rule: A drop-down toggle button's accName can be set via `aria-labelledby` referencing the parent link's `id` so the link's visible text doubles as the button's accName (DRY).
+- Rule: Drop-down toggles get `aria-expanded` (true/false) and may use `aria-controls` to associate with the nested list they control.
+- Rule: A drop-down must dismiss on Esc — focus returns to the toggle that opened it, `aria-expanded` updates to `false`.
+- Rule: A drop-down must dismiss on click outside the open dropdown — `aria-expanded` on the toggle updates accordingly.
+- Rule: A drop-down must dismiss when keyboard focus moves outside the navigation — otherwise the expanded dropdown can obscure focused content elsewhere on the page (risks SC 2.4.12 / SC 2.4.13).
+- Rule: Don't build navigations that open ONLY on hover — barrier to access for keyboard-only and fine-motor-disabled users.
+- Rule: If you DO open dropdowns on hover, keep `aria-expanded` in sync with the visual state, ensure Esc dismisses, ensure the dropdown is hoverable (even with magnified pointers), and implement hover-intent detection so mouse-passing-through doesn't trigger the dropdown.
+- Rule: Indicate the current page in a nested nav using `aria-current="page"` on the current-page link AND `aria-current="true"` on the active parent item ("You are in Products. The current page is Kitchen.").
+- Rule: `aria-current` accepts six predefined values — `true`, `false`, `page`, `step`, `location`, `date`, `time`; any unknown value should be treated by AT as `true`.
+- Rule: Arrow-key navigation is OPTIONAL for site navigation; consider it only for large/mega-menu navigations to reduce tab stops.
+- Rule: Don't use `<details>`/`<summary>` for drop-down navigation — `<summary>` is announced inconsistently across browser/SR pairings, Chromium auto-expands matching `<details>` on in-page search and they stay open, and you still need JS for Esc / click-outside dismissal.
+- Rule: Don't nullify a link's `href` (e.g., `href="#"` + `onclick`) to fake a dropdown toggle — link semantics promise navigation but the link doesn't take the user anywhere; either use a `<button>` or enhance the link into a button via `role="button"` + Space-key handling.
+- Rule: When enhancing a link to a dropdown-toggle button (`role="button"`), the browser doesn't supply button keyboard behaviour — implement Space-key activation explicitly (Enter already works on links) while respecting Space's keyup firing.
+- Rule: Don't use ARIA `menu` / `menubar` / `menuitem` / `menuitemcheckbox` / `menuitemradio` roles for site navigation — they describe OS-style ACTION menus (Finder bar, Windows menu bar), not navigation; they trigger application-mode context switches in screen readers and disable default navigation keys.
+- Rule: If you must build an OS-style action menu, start with semantic HTML navigation and add ARIA roles via JavaScript — if JS/ARIA fails, the implicit semantics serve as a fallback.
+- Rule: When enhancing a list-based menu with ARIA menu roles, apply `menuitem` to the interactive element (the link) — NOT to the wrapping `<li>`.
+- Rule: `menuitem` must be a descendant of (or owned via `aria-owns` by) an element with role `menu` or `menubar`.
+- Rule: An icon-button dropdown toggle should meet SC 2.5.5 Target Size (44×44 CSS pixels minimum) so users on touch / with limited dexterity can activate it.
+- Rule: For site navigation, use simple semantic HTML with minimal ARIA — more ARIA does not mean better accessibility; don't over-engineer.
 
 ## HTML Elements
 
@@ -247,9 +268,10 @@
 - Role: `tablist` — composite widget role that owns child `tab` roles; no native HTML element maps to tablist; used together with `tab` and `tabpanel` to compose a Tabs widget.
 - Role: `tab` — child widget role within a `tablist` that toggles a tab panel; MUST be contained in or owned by an element with `role="tablist"`.
 - Role: `tabpanel` — widget role for the panel content associated with a `tab`.
-- Role: `menu` — composite widget role; expects `menuitem` children.
-- Role: `menubar` — composite widget role; expects `menuitem` children.
-- Role: `menuitem` — widget role that must be a child of an element with `menu` or `menubar` role; may not contain interactive children (no nested `<button>`, no `<a>`, and no elements with implicit button or link roles).
+- Role: `menu` — composite widget role for an OS-style ACTION menu (list of common actions/functions to invoke, similar to a desktop application menu); expects `menuitem` children; NOT for site navigation; triggers application-mode in screen readers.
+- Role: `menubar` — composite widget role for a menu bar similar to those in Windows/Mac/Gnome desktop applications; expects `menuitem` children; NOT for site navigation (APG explicitly warns against using it that way).
+- Role: `menuitem` — widget role that must be a descendant of (or owned via `aria-owns` by) an element with `menu` or `menubar` role; may not contain interactive children (no nested `<button>`, no `<a>`, and no elements with implicit button or link roles); when enhancing a list-based menu, apply this role to the interactive element (the link) — NOT the wrapping `<li>`.
+- Role: `toolbar` — collection of commonly-used function buttons or controls represented in compact visual form; often a subset of functions found in a menubar.
 - Role: `menuitemcheckbox` — widget role; allowed on `<button>`.
 - Role: `menuitemradio` — widget role; allowed on `<button>`.
 - Role: `checkbox` — widget role; allowed on `<button>`.
@@ -269,7 +291,8 @@
 - Attribute: `aria-labelledby` — Provides an accessible name by referencing one or more elements (by `id`) on the page as the label; takes the HIGHEST priority in the accName computation algorithm, overriding element content; useful for reusing existing on-page text (e.g., a heading naming a landmark, a search button naming a search input).
 - Attribute: `aria-describedby` — Property that references one or more elements on the page (by `id`) to provide an accessible description for the element it is used on; the description is appended to the element's name and role and presented to the user as a flat string of text — any structured content (lists, links) inside the referenced element loses its semantics when announced. Whether and when the description is announced depends on the browser/AT pairing, the association method, and the user's interaction type; when announced, the description typically follows the name and role.
 - Attribute: `aria-disabled` — Conveys disabled state to assistive technologies, e.g., `aria-disabled="true"`.
-- Attribute: `aria-current` — Used on a link to indicate it is the current item in a set; supports values such as `true` and `page` — `page` causes screen readers to announce "link, current page" instead of just "link, current".
+- Attribute: `aria-current` — State indicating the element is the current item in a set; accepts six predefined values — `true`, `false`, `page`, `step`, `location`, `date`, `time`; any unknown value should be treated by AT as `true`; on a navigation link `page` causes screen readers to announce "link, current page"; in a nested nav use `aria-current="page"` on the current-page link AND `aria-current="true"` on the active parent item ("You are in Products. The current page is Kitchen.").
+- Attribute: `aria-owns` — ARIA property that lets an element claim ownership of other elements that aren't its DOM descendants — useful when a `menuitem` cannot be nested inside its `menu`/`menubar` parent.
 - Attribute: `aria-pressed` — State on a button-like element indicating whether the toggle is currently pressed (`true`) or not (`false`); changes must be managed via JavaScript.
 - Attribute: `aria-expanded` — State indicating whether the element, or another grouping element it controls, is currently expanded (`true`) or collapsed (`false`); when used on a `<button>`, also communicates that the control is a disclosure button controlling the visibility of something; update via JavaScript on user interaction.
 - Attribute: `aria-controls` — Property that identifies the element(s) whose contents or presence are controlled by the current element, via the controlled element's `id`; optional and effectively only supported by JAWS (poorly) — most screen readers no longer expose this relationship.
@@ -307,6 +330,10 @@
 - WCAG: SC 4.1.2 Name, Role, Value (Level A) — "For all user interface components (including but not limited to: form elements, links and components generated by scripts), the name and role can be programmatically determined;" — referenced as being violated when an ARIA role conflicts with the nature of the element it is applied to (e.g., `role="heading"` on a `<button>`), because the semantic mismatch may prevent users from interacting with the element as announced.
 - WCAG: SC 2.5.3 Label in Name — "For user interface components with labels that include text or images of text, the name contains the text that is presented visually." When the visible label and accessible name don't match, the name must contain the label so speech-control users and others relying on the visible text can activate the control. Best practice per the Understanding page: "the text of the label [should be] at the start of the name" — Dragon and some other voice software use heuristics that match elements whose accName STARTS WITH the spoken term. Risks: (1) CSS-generated content (with alt-text) placed at the start of an element's content can cause a violation if CSS fails to load; (2) `value` and `aria-label`/`aria-labelledby` mismatch on `<input type="submit | button | reset">` (the visible `value` text is no longer contained in the accName); (3) naming a `<button>` via a `<label for>` whose text doesn't match the button's visible label; (4) inserting visually-hidden disambiguation text into the MIDDLE of a control's label breaks voice-control matching.
 - WCAG: SC 3.2.4 Consistent Identification (Level AA) — "Components that have the same functionality within a set of Web pages are identified consistently." Two or more components with the same functionality must share the same accessible name; giving same-function components different accNames is a typical failure mode.
+- WCAG: SC 2.4.12 Focus Not Obscured (Minimum) — when a UI component receives keyboard focus, the component is not entirely hidden by author-created content; e.g., an expanded dropdown that completely covers focused content outside the nav can violate this.
+- WCAG: SC 2.4.13 Focus Not Obscured (Enhanced) — stricter version of SC 2.4.12 (no part of the focused component is obscured by author-created content).
+- WCAG: SC 2.5.5 Target Size (Level AAA) — the size of the target for pointer inputs is at least 44 by 44 CSS pixels; ensures users on small touch screens, with limited dexterity, or who struggle with small targets can activate them.
+- WCAG: SC 1.4.13 Content on Hover or Focus (Level AA) — additional content shown on hover/focus must be Perceivable (user knows it appeared), Dismissable (user can close without moving the pointer), and Hoverable (user can hover the revealed content without it disappearing); also account for users who enlarge their pointer.
 - WCAG: SC 3.3.2 Labels or Instructions (Level A) — "Labels or instructions are provided when content requires user input." All form controls (and widgets) that expect user input are required to have a visible label, plus a description where needed.
 
 ## Patterns & Recipes
@@ -365,6 +392,16 @@
 - Pattern: Compound accName via `aria-label` + `aria-labelledby` combo (rare) — `<button id="css-remove" aria-label="Remove" aria-labelledby="css-remove css">×</button>` — `aria-label` provides the base, `aria-labelledby` overrides it and concatenates the pill text; valid but use cautiously due to `aria-label` translation issues.
 - Pattern: Disambiguate repeated "Add to Cart" buttons — `<button>Add to Cart <span class="visually-hidden">, [PRODUCT_NAME]</span></button>`; the visible "Add to Cart" stays at the start of the accName, the product name is appended for uniqueness, voice users can still say "Click Add to Cart" and pick by number ("choose N").
 - Pattern: Disambiguate repeated "Read More" links — `<a href="/path/">Read More <span class="visually-hidden">about [ARTICLE TITLE]</span></a>`; label-first accName, article title appended; Dragon's start-of-name heuristic still finds all "Read More" links.
+- Pattern: Drop-down nav — parent replaced by a `<button>` — `<li><button aria-expanded aria-controls="products-list">Products <svg aria-hidden="true">…</svg></button><ul role="list" id="products-list">…</ul></li>`; use `aria-expanded` as a CSS hook to rotate the chevron.
+- Pattern: Drop-down nav — link + separate icon-button toggle — `<li><a href="/products/" id="products">Products</a><button aria-expanded aria-controls="products-list" aria-labelledby="products"><svg aria-hidden="true">…</svg></button><ul role="list" id="products-list">…</ul></li>`; the icon button's accName comes from the adjacent link via `aria-labelledby`.
+- Pattern: Drop-down nav — link enhanced to a button via `role="button"` — `<li><a href="/products/" role="button" aria-expanded aria-controls="products-list">Products</a><ul role="list" id="products-list">…</ul></li>`; wire Space-key activation in JS (browsers only fire Enter on links).
+- Pattern: Progressive enhancement for drop-down nav — start with all nested lists visible; in JS replace the parent `<span>` with a `<button>` (or append a sibling icon-button), add ARIA attributes, and hide nested lists via `hidden`; if JS fails, all nav content is still reachable.
+- Pattern: Indicate current page in a nested nav — `aria-current="page"` on the current-page link AND `aria-current="true"` on the active parent item.
+- Pattern: Dismiss dropdown on Esc — listen for Esc in the open dropdown; set `aria-expanded="false"` on the toggle, hide the nested list, move focus back to the toggle.
+- Pattern: Dismiss dropdown on outside click — listen for clicks outside the open dropdown; set `aria-expanded="false"` and hide the nested list.
+- Pattern: Dismiss dropdown when focus moves outside the nav — listen for `focusin` outside the nav (or `focusout` of the last focusable inside it) and collapse open dropdowns so they don't obscure focused content elsewhere.
+- Pattern: Hover-dropdown safeguards (when hover is required) — keep `aria-expanded` in sync with the visual state; ensure Esc dismisses; ensure the dropdown is hoverable with magnified pointers; implement hover-intent (delay) so passing the mouse over doesn't trigger the dropdown.
+- Pattern: Enhance simple nav to an OS-style action menu — keep the `<nav><ul><li><a>…</a></li>` skeleton; in JS add `role="menubar"` on the container, `role="menuitem"` on each link (not on `<li>`), and implement the full menu keyboard pattern; if JS fails, the implicit nav semantics serve as a fallback.
 
 ## Complex Components
 
@@ -472,6 +509,25 @@
 - Find-in-page on custom widgets — a custom `<button>` + `hidden` disclosure is invisible to browser find-in-page by default (the panel is hidden via `display: none`); switch the hidden state to `hidden="until-found"` to make the panel discoverable to find-in-page and fragment navigation in supporting (Chromium-only at lecture time, broadening via Interop 2025) browsers.
 - hidden-until-found CSS interference — `[hidden] { display: none !important; }` reset rules block until-found's effect; use `[hidden]:not(:is([hidden="until-found"])) { display: none !important; }` instead so plain `hidden` still wins on specificity while until-found works.
 - hidden-until-found generated-box — under until-found browsers use `content-visibility: hidden`, so the hidden element still generates a box; move padding, borders, and backgrounds to a child container (e.g., `.panel__content`) to avoid unexpected whitespace and borders.
+
+### Drop-down navigation
+
+- Definition — a `<nav>` containing links nested two or more levels deep; parent items act as disclosure widgets that show/hide their nested list.
+- Three markup patterns — (1) parent replaced by `<button>` when it doesn't need to navigate; (2) parent kept as link + sibling icon-button toggle when the parent must also link to a page; (3) parent link enhanced to button via `role="button"` when you can't add a button to the markup.
+- Pattern 1 markup — `<li><button aria-expanded aria-controls="products-list">Products <svg aria-hidden="true">…</svg></button><ul role="list" id="products-list">…</ul></li>`.
+- Pattern 2 markup — `<li><a href="/products/" id="products">Products</a><button aria-expanded aria-controls="products-list" aria-labelledby="products"><svg aria-hidden="true">…</svg></button><ul role="list" id="products-list">…</ul></li>` — the icon button's accName comes from the adjacent link via `aria-labelledby`.
+- Pattern 3 markup — `<li><a href="/products/" role="button" aria-expanded aria-controls="products-list">Products</a><ul role="list" id="products-list">…</ul></li>` — wire Space-key activation in JS (browsers only fire Enter on links).
+- Visual state hook — animate the chevron with `nav button[aria-expanded="true"] svg { transform: rotate(180deg); }`; use `aria-expanded` and `aria-current` generally as styling hooks.
+- Keyboard — Tab through items; Space/Enter on the toggle expands/collapses; Esc collapses the open dropdown and returns focus to the toggle; tabbing past the last item or outside the nav collapses any open dropdown.
+- Mouse — clicking outside the open dropdown closes it; `aria-expanded` syncs accordingly.
+- Current-page indication — `aria-current="page"` on the current-page link AND `aria-current="true"` on the active parent item ("You are in Products. The current page is Kitchen.").
+- Arrow keys — optional; valuable for large nav / mega-menus to cut tab stops; refer to APG's "Disclosure Navigation Menu with Top-Level Links" (Sarah Higley's implementation) for a complete arrow-key script.
+- Minimum target size — the icon-button toggle should meet SC 2.5.5 (44×44 CSS pixels).
+- Don't use `<details>`/`<summary>` — inconsistent SR announcements ("summary", "disclosure triangle"); Chromium auto-expands `<details>` on find-in-page and they stay open; still requires JS for Esc / click-outside; functionally inaccessible per Scott O'Hara.
+- Don't use ARIA `menu`/`menubar`/`menuitem` — describe OS-style action menus, not navigation; trigger application-mode in screen readers (NVDA sounds a short chime on tab-in) and disable default SR navigation keys; APG warns against using `menubar` for site navigation.
+- Hover gotcha — hover-only dropdowns are inaccessible to keyboard / fine-motor users and risk SC 1.4.13; if hover IS used, implement hover-intent to ignore mouse-passing-through.
+- Focus-obscured gotcha — if the dropdown stays open after focus leaves the nav, focused content elsewhere can be hidden behind it (risks SC 2.4.12 / SC 2.4.13).
+- Author recommendation — for site navigation use plain semantic HTML with minimal ARIA; only escalate to ARIA menu roles when building an OS-style action menu inside a true web application.
 
 ### Pagination
 
@@ -590,6 +646,15 @@
 - Anti-pattern: Different-functionality components sharing the SAME accessible name (e.g., all "Add to Cart" buttons named just "Add to cart") — screen-reader users see indistinguishable names in element lists and can't tell which one to activate.
 - Anti-pattern: Visually-hidden disambiguation text inserted into the MIDDLE of a control's label (e.g., `Add <span class="visually-hidden">[PRODUCT]</span> to Cart`) — fragments the visible label inside the accName so voice-control matching fails.
 - Anti-pattern: Visually-hidden disambiguation text placed BEFORE the visible label — the visible label is no longer at the START of the accName, defeating Dragon's start-of-name heuristic and pushing voice users into more tedious workarounds.
+- Anti-pattern: Using `href="#"` (or any nullified `href`) + `onclick` on a link to fake a dropdown toggle — link semantics promise navigation but the link doesn't take the user anywhere; breaks user expectations.
+- Anti-pattern: Adding `aria-expanded` to a navigation link to make it act as a dropdown toggle without enhancing it to a button — the link's "takes you somewhere" semantics conflict with the toggle behaviour; `aria-expanded` doesn't fix the mismatch.
+- Anti-pattern: Using `<details>`/`<summary>` for drop-down navigation — inconsistent SR announcements, unwanted Chromium find-in-page auto-expansion, and you still need JS for Esc / click-outside.
+- Anti-pattern: Using ARIA `menu`/`menubar`/`menuitem` roles for site navigation — triggers application-mode context switch in screen readers, disables default navigation keys; the menubar pattern is overkill for site nav (APG warns against it).
+- Anti-pattern: Implementing an ARIA menu role without the expected keyboard pattern — users get stuck because the SR has handed keyboard control back to the browser.
+- Anti-pattern: Applying `menuitem` to the wrapping `<li>` instead of the interactive `<a>` — wrong target; the role belongs on the element that performs the action.
+- Anti-pattern: Hover-ONLY drop-down navigations — barrier to access for keyboard-only and fine-motor-disabled users; also risks SC 1.4.13 violations.
+- Anti-pattern: Letting an expanded dropdown stay open when focus leaves the nav — focused content elsewhere on the page can be obscured (risks SC 2.4.12 / SC 2.4.13 Focus Not Obscured).
+- Anti-pattern: Opening a dropdown on hover without hover-intent detection — the dropdown fires for users merely passing the mouse on the way somewhere else; jarring.
 
 ## Decision Rules
 
@@ -634,6 +699,9 @@
 - Decision: Compound pill-button accName — `aria-labelledby` with two ids (visually-hidden "Remove" + pill text) vs `aria-label`+`aria-labelledby` combo — prefer the visually-hidden span approach because `aria-label` doesn't translate well; the combo is valid but rare.
 - Decision: Same action ↔ same accName, different action ↔ different accName — apply consistent-identification (SC 3.2.4) and unique-name guidance together; never let two same-function controls disagree, never let two different-function controls agree.
 - Decision: Where to place disambiguation text in a button/link accName — ALWAYS append, NEVER prepend or insert in the middle, so the visible label remains at the start of the accName for voice-control matching.
+- Decision: Which drop-down-nav pattern to use — Pattern 1 (button-only) when the parent doesn't need to navigate; Pattern 2 (link + sibling icon button) when the parent must also be a link; Pattern 3 (link enhanced via `role="button"`) when you can't change the markup to add a button.
+- Decision: Site navigation vs ARIA menu — site navigation is NOT a menu; use `<nav>` + `<ul>`/`<li>` + `<a>` with minimal ARIA; reach for ARIA `menu`/`menubar`/`menuitem` only when building an OS-style action menu inside a true web application.
+- Decision: `aria-current` on parent vs current item — `aria-current="page"` on the link that IS the current page; `aria-current="true"` on the active parent item; lets AT communicate "you are in X, the current page is Y".
 
 ## Keyboard Behaviour
 
@@ -723,6 +791,7 @@
 - AT: Dragon's start-of-name heuristic — Dragon can match elements whose accessible name STARTS WITH the spoken term (the visible label), even if the rest of the name differs; relies on the label-at-start best practice from SC 2.5.3.
 - AT: Voice software fallback (Mouse Grid) — when no accName matches the spoken label, voice users must fall back to the Mouse Grid (spatial grid selection) to focus the control; tedious and time-consuming, sometimes needed multiple times per session.
 - AT: AT-specific workaround literacy — on some platforms, voice users can speak specialised commands to reveal the full accNames of elements, but this requires literacy with the software that not all users have.
+- AT: Application mode (ARIA menu/menubar) — some ARIA widget roles (e.g., `menu`, `menubar`) trigger a context switch in screen readers; the SR hands keyboard control back to the browser, default SR navigation keys stop working, and the author must implement the full expected keyboard pattern or users get stuck. NVDA plays a short sound when entering this mode.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -763,6 +832,10 @@
 - Tool: Level Access Dragon demonstration video — shows Dragon used to fill out form information in a web page (9 years old, but still relevant per the lecture).
 - Tool: Tetralogical "Browsing with Speech Recognition" — recent video demonstration of Dragon, part of Tetralogical's "Browsing with Assistive Technology" series.
 - Tool: Eric Bailey's "Voice Control Usability Considerations For Partially Visually Hidden Link Names" — article arguing that partially visually-hidden link text isn't necessarily a hard WCAG failure but degrades voice-control UX; advocates shifting accessibility considerations left into design.
+- Tool: ARIA Authoring Practices Guide (APG) — "Disclosure Navigation Menu with Top-Level Links" page documents an accessible drop-down navigation with arrow-key support; implementation by Sarah Higley, includes a JS file you can adapt; APG also includes a menubar example that explicitly warns against using `menubar` for site navigation.
+- Tool: Nielsen Norman Group article on hover intent — explains distinguishing mouse-trajectory-through from mouse-intent; useful when implementing hover-opened dropdowns and timing safeguards.
+- Tool: Adrian Roselli's article against `menu`/`menuitem` for site navigation — argues a typical website is not an application and shouldn't use OS-style menu roles for site nav.
+- Tool: Léonie Watson's "Bag of Spanners" talk (Beyond Tellerrand 2022) — demonstrates how semantics impact accessibility and how to enhance a simple navigation into a menu using ARIA (relevant section starts at 25:41).
 - Tool: Accessibility Insights for Windows — desktop application for inspecting how content is exposed in the accessibility tree (used in the lecture to demonstrate that a heading with `role="none"` is reported as plain text vs a heading exposed as a heading).
 - Tool: Android TalkBack — Android touch-screen screen reader that supports "explore by touch" navigation: users drag their finger across the screen to hear what is directly underneath.
 
@@ -801,6 +874,11 @@
 - Term: Shift Left methodology — addressing accessibility considerations early in the conception phase (in collaboration with content writers, developers, and project managers) rather than retrofitting later.
 - Term: Mouse Grid — voice-control fallback that focuses controls by spatial grid selection; used when no accessible name matches the user's spoken label.
 - Term: Consistent Identification (SC 3.2.4) — components with the same functionality on a set of pages must be identified consistently, i.e. share the same accessible name.
+- Term: Drop-down navigation — a `<nav>` containing links nested two or more levels deep; parent items act as disclosure widgets that toggle visibility of nested lists.
+- Term: Mega menu / mega drop-down — a large drop-down navigation, often with many items and possibly multiple columns; common candidate for arrow-key navigation and hover-intent timing concerns.
+- Term: Application mode (screen reader) — context switch that some ARIA widget roles (e.g., `menu`/`menubar`) trigger in screen readers; SR hands keyboard control back to the browser, so the author must implement the full keyboard pattern or users get stuck. NVDA plays a short sound on entering this mode.
+- Term: Hover intent — the distinction between a user merely moving the mouse across a hover trigger and a user actually intending to interact with it; relevant timing safeguard when implementing hover-opened dropdowns.
+- Term: Disclosure Navigation pattern — APG's recommended pattern for site navigation with expandable groups of links — built from disclosure widgets (button + `aria-expanded`) rather than ARIA menu roles.
 - Term: Explore by touch — per the Material Design Accessibility Guidelines, "Touch interface screen readers allow users to run their finger over the screen to hear what is directly underneath. This provides the user with a quick sense of an entire interface."
 - Term: Inclusive hide (for form controls) — visually hiding a native form control while keeping it within the viewport in its natural position (via `position: absolute; opacity: 0`, sometimes enlarged with relative width/height) so touch screen-reader users can still find it by haptics.
 - Term: Accessible name (accName) — a string of text programmatically associated with an element and exposed by the browser to assistive technologies via the accessibility tree; provides a label for the element to AT users.

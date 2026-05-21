@@ -378,6 +378,32 @@
 - Rule: Limit live regions to ideally 2 — one assertive + one polite — inserted at page load; route all updates through them and manage the message queue in JavaScript.
 - Rule: The ideal number of live regions on a page is zero — limit to as few as you can; per Scott O'Hara, "if you can create an interface that can limit the number of live regions necessary - none being the ideal - then that'd be for the better".
 - Rule: Carefully choreograph the sequence of events across your live region(s) — this is the best approach for maximum cross-browser/SR compatibility, since assertive updates can clear queued polite ones.
+- Rule: The focus indicator is to keyboard users what the mouse cursor is to mouse users — never hide it; doing so makes the page essentially unnavigable for keyboard and keyboard-like AT users (speech control, switch controls, mouth sticks, head wands).
+- Rule: Don't write `:focus { outline: none }` (or `* { outline: none }`) to strip browser focus indicators — fails SC 2.4.7 Focus Visible; only ever remove the default if you're replacing it with your own accessible indicator.
+- Rule: A visible focus indicator must be CLEARLY visible — high enough color contrast against adjacent colors that users with moderately low vision can discern it; merely "showing" the default is not enough when it clashes with your palette.
+- Rule: Focus indicators must have a color contrast ratio of at least 3:1 against adjacent colors (per SC 1.4.11 Non-Text Contrast) — the "adjacent colors" depend on the indicator's position relative to the component.
+- Rule: An outside focus indicator must contrast 3:1 with the background around the component.
+- Rule: An inside focus indicator must contrast 3:1 with the component's interior background color.
+- Rule: A border focus indicator (replacing or recoloring the border) must contrast 3:1 with BOTH the component's background AND the background around the component.
+- Rule: An inner-border focus indicator must contrast 3:1 with BOTH the component's background AND the component's border color.
+- Rule: A partly-inside/partly-outside focus indicator needs 3:1 contrast with EITHER the component's background OR the background outside — either side qualifies.
+- Rule: When the focus state changes the component's border color or background color, the contrasting area must have at least 3:1 between focused and unfocused states; falling short fails Focus Appearance AND SC 1.4.1 Use of Color.
+- Rule: For Focus Appearance (SC 2.4.13), the contrasting area must be AT LEAST as large as a 2 CSS pixel thick perimeter of the unfocused component — a 2px solid outline that encloses the component is the simplest way to satisfy this; thicker outlines also qualify.
+- Rule: A focus indicator can take forms other than a solid outline (gradient drop shadow, line-on-either-side, background-color change, inner outline, etc.) — as long as the contrasting area is at least the perimeter size and meets the 3:1 contrast requirements.
+- Rule: A dashed or dotted outline does not "solidly bound" the component and its area is roughly half the equivalent solid outline — double the thickness (e.g., `4px dashed` instead of `2px dashed`) to compensate.
+- Rule: An inner outline is smaller than the component's perimeter — increase its thickness so its area still meets the 2px-thick-perimeter requirement.
+- Rule: For a gradient focus indicator, only the portion of the gradient with ≥3:1 contrast counts as the contrasting area — spot-check the gradient and ensure the qualifying area is at least twice the perimeter.
+- Rule: The bigger the contrast change between unfocused and focused, the easier the indicator is to see — aim for maximum visibility, not minimum conformance.
+- Rule: The focused element itself must remain visible — never hide it behind modals, fly-outs, fixed headers, or other author-created content (SC 2.4.11 minimum, SC 2.4.12 enhanced).
+- Rule: Conversely, intentionally hidden elements must not be able to receive focus when they shouldn't — verify by tabbing.
+- Rule: When testing keyboard accessibility, check that each focused element is visible AND not obscured by other content on the page.
+- Rule: Browser default focus indicators are EXEMPT from SC 1.4.11 Non-Text Contrast and SC 2.4.13 Focus Appearance (as long as the indicator and its background aren't author-modified) — so a default that conforms technically can still be unusable for many users.
+- Rule: Users can customise their default focus-indicator color (e.g., macOS Accent Color) — you cannot rely on the default having sufficient contrast with your page colors.
+- Rule: Designers should include focus-indicator styles in design specs — prioritise usability over aesthetics; if the team won't design custom indicators, ship the universal black-and-white indicator as a default.
+- Rule: Developers should include focus styles in CSS defaults and use `:focus-visible` so indicators only show for users who need them.
+- Rule: Prefer the `outline` property over `border` for focus indicators — outlines don't participate in the box model, so they cause no layout shifts; outlines are also retained in Forced Colors modes where backgrounds, borders, and box-shadows get overridden by system colors.
+- Rule: Use `:focus-visible` (not `:focus`) for custom focus styles so the indicator only appears for keyboard users — modern browsers do this automatically for their default indicators, and users dislike outlines on click/tap.
+- Rule: For backwards compatibility with browsers that don't support `:focus-visible`, layer `:focus` + `button:focus:not(:focus-visible) { /* undo */ }` + optional stronger `:focus-visible` styles (per Patrick Lauke) — browsers that don't understand `:focus-visible` ignore the entire `:not(:focus-visible)` block.
 - Rule: Multiple live regions on a page can interfere; per ARIA spec, when an assertive change occurs the user agent MAY clear queued polite changes — some messages get lost or partially announced.
 - Rule: Pre-compose the live region message and insert it in ONE DOM operation — multiple insertions can produce multiple separate announcements.
 - Rule: Keep live region messages short and succinct; avoid rich content, interactive elements, and non-text elements (images) — they're not conveyed to SR users.
@@ -573,6 +599,9 @@
 - WCAG: SC 1.4.1 Use of Color (Level A) — color must not be the only means of conveying information; for invalid-state communication, pair red styling with an icon or text so users with color blindness can still perceive the state.
 - WCAG: SC 1.4.3 Contrast (Minimum) (Level AA) — disabled controls and other "inactive user interface components" are EXEMPT from the minimum contrast requirement; the exemption is technical only — disabled controls still create real usability barriers for users with low vision, so aim for usability beyond conformance.
 - WCAG: SC 4.1.3 Status Messages (Level AA) — "In content implemented using markup languages, status messages can be programmatically determined through role or properties such that they can be presented to the user by assistive technologies without receiving focus." A status message is a change in content that is NOT a change of context, communicating success/result of an action, application waiting state, process progress, or the existence of errors. Change-of-context (new window, focus move, page navigation, significant page rearrangement) is already surfaced by AT and out of scope. Met via ARIA live regions (`aria-live` or live region roles).
+- WCAG: SC 2.4.7 Focus Visible (Level AA) — "any keyboard operable user interface has a mode of operation where the keyboard focus indicator is visible." Removing or hiding focus indicators (e.g., `:focus { outline: none }`) fails this criterion; the first step to accessible focus indicators is not hiding them.
+- WCAG: SC 2.4.13 Focus Appearance (Level AAA) — "When the keyboard focus indicator is visible, an area of the focus indicator meets all the following: is at least as large as the area of a 2 CSS pixel thick perimeter of the unfocused component or sub-component, and has a contrast ratio of at least 3:1 between the same pixels in the focused and unfocused states." Defines a minimum level of visibility (area + change-of-contrast); allows forms other than a solid outline so long as the contrasting area is at least that large. Default browser focus indicators are exempt as long as the indicator and its background are not author-modified.
+- WCAG: SC 1.4.11 Non-Text Contrast (Level AA) — "The visual presentation of the following have a contrast ratio of at least 3:1 against adjacent color(s): User Interface Components: Visual information required to identify user interface components and states…" Focus indicators (a component-state cue) fall under this — they need ≥3:1 against the colors adjacent to the component. Exempt: inactive components, and components whose appearance is determined by the user agent and not modified by the author (so default browser focus indicators technically conform even when unusable).
 
 ## Patterns & Recipes
 
@@ -707,6 +736,16 @@
 - Pattern: SPA navigation announcement — when an in-app link changes the page without a refresh, update the `<title>` AND move keyboard focus to the new page's main `<h1>`; SR announces the heading content, giving the same context the page title would; helps keyboard users avoid tabbing through many elements to reach new content.
 - Pattern: Item-added-to-cart overlay — render a modal cart overlay and move keyboard focus to it instead of announcing "added to cart" via a live region; treat as a modal dialog (manage focus, dim background); keyboard/SR users land in the cart with options to edit or check out.
 - Pattern: Empty-and-wait live region between updates — `setTimeout(() => { /* empty region */ }, 350)` after each announcement so the next update is reliably detected; clears stale text from being navigable when hidden.
+- Pattern: Universal black-and-white focus indicator — `:focus-visible { outline: 3px solid black; box-shadow: 0 0 0 6px white; }`; outlines overlap box-shadows, so extend the box-shadow by 3px past the outline so a 3px visible white ring remains; the black covers light backgrounds, the white covers dark backgrounds, ensuring 3:1 contrast against any page color. Flip black/white if components are predominantly dark.
+- Pattern: Oreo-focus indicator (Erik Kroes) — `:focus-visible { outline: 9px double black; box-shadow: 0 0 0 6px white; }`; produces two black outlines with a white outline between them (like an Oreo); each black line is 3px thick (`double` outline divided across 9px). Use relative units if you want it to scale; flip the order for dark themes.
+- Pattern: Offset focus outline for breathing room — `button:focus { outline: 4px solid black; outline-offset: 2px; }`; the gap between the component and the outline helps the indicator stand out.
+- Pattern: Keyboard-only focus indicator — write focus styles under `:focus-visible` (not `:focus`) so the indicator appears only on keyboard navigation, not on mouse click / tap; modern browsers do this for their defaults.
+- Pattern: `:focus-visible` backwards-compatibility recipe (Patrick Lauke) — declare `button:focus { /* styles */ }`, then `button:focus:not(:focus-visible) { /* undo styles */ }`, then optional stronger `button:focus-visible { /* styles */ }`; browsers that don't recognise `:focus-visible` ignore the entire `:not(:focus-visible)` block, so the original `:focus` styles still apply there.
+- Pattern: Inner focus outline with thickness compensation — for components with hidden overflow (or inside dropdowns where an outer outline would clip), use an inner outline thicker than 2px (e.g., 3px) so its area still meets the 2px-perimeter requirement.
+- Pattern: Two-line side focus indicator — for stacked list items, draw a thick vertical line on each short side; ensure `2 × (line_thickness × item_height) ≥ 4×(width + height)` so the total contrasting area meets the perimeter requirement.
+- Pattern: Spot-check a gradient focus indicator — sample multiple points inside the gradient with a contrast tool; sum the area where the sampled contrast is ≥3:1; ensure that area is at least twice the component's perimeter to meet Focus Appearance.
+- Pattern: Perimeter calculation — for a rectangle of width w and height h, the 2px thick perimeter ≈ `4w + 4h` square pixels (simplified, ignoring shared corner pixels); for a circle of radius r, `4πr`.
+- Pattern: Background-color-change focus indicator — flip the component's background color on focus (e.g., blue → black); the entire button background becomes the contrasting area; ensure ≥3:1 between unfocused and focused colors so it doesn't also fail SC 1.4.1 Use of Color.
 
 ## Complex Components
 
@@ -1079,6 +1118,30 @@
 - Escape behaviour — returns keyboard focus to the search input.
 - Reference — Scott O'Hara's "Considering dynamic search results and content" article + demo.
 
+### Focus indicator
+
+- Definition — a visual indicator that "highlights" the currently focused element; typically a rectangular outline around the element (since every CSS element is a rectangle); can take other forms (gradient drop shadow, background-color flip, side lines, inner outline).
+- Purpose — keyboard users' equivalent of a mouse cursor; without it, keyboard, switch-control, mouth-stick, head-wand, and speech-control users can't tell where they are on the page.
+- WCAG coverage — SC 2.4.7 Focus Visible (AA) requires it exist; SC 1.4.11 Non-Text Contrast (AA) requires ≥3:1 against adjacent colors; SC 2.4.13 Focus Appearance (AAA) requires the contrasting area be ≥ a 2px-thick perimeter of the component AND ≥3:1 between focused and unfocused states; SC 2.4.11 / 2.4.12 require the focused element not be obscured.
+- Focus indication area — the pixels on screen that change color between the unfocused and focused states; measured in square CSS pixels.
+- Contrasting area — the subset of the focus indication area with ≥3:1 contrast between the two states; may equal the entire focus indication area (e.g., solid black outline on white) or be smaller (e.g., the qualifying portion of a gradient).
+- Position decision — outside, inside, along the border, inner border, or partly-inside/partly-outside; the position dictates which "adjacent colors" the indicator must contrast with.
+- Solid outline preference — a solid outline that encloses the component is the simplest pattern; 2px solid encloses correctly; thicker outlines also qualify; dashed/dotted outlines need doubled thickness.
+- Inner-outline thickness compensation — an inner outline is smaller than the component's perimeter; e.g., a 130×55 inner outline on a 150×75 button has perimeter 370, so 2px-thick inner area = 740 — short of the 900 required; bump to 3px or thicker.
+- Form alternatives — background-color flip, border-color flip, gradient drop shadow, side lines — all valid if the contrasting area meets the perimeter requirement and 3:1 contrast.
+- Two-color outline (universal) — combine `outline` (e.g., 3px solid black) with a same-thickness solid `box-shadow` (e.g., `0 0 0 6px white` so 3px is visible past the outline); black covers light backgrounds, white covers dark; works against most page palettes.
+- Oreo-focus — two black outlines around a white middle, via `outline: 9px double black` + `box-shadow: 0 0 0 6px white`; even more visible than the basic two-color outline; flip black/white for dark themes.
+- `:focus-visible` — apply custom focus styles under this pseudo-class so they only appear for keyboard users; modern browsers already do this for the default indicator.
+- Backwards compatibility for `:focus-visible` — pair `:focus` with `:focus:not(:focus-visible)` undo styles (per Patrick Lauke); legacy browsers ignore the `:not(:focus-visible)` block and keep `:focus` styling intact.
+- Outline vs box-shadow trade-off — `outline` is retained in Forced Colors modes (Windows High Contrast Mode) where box-shadows and background colors get overridden; combine the two but rely on `outline` for the always-visible component of the indicator.
+- Outline vs border — prefer `outline` (no box-model impact, no layout shift) over `border` (changes box dimensions when applied/removed).
+- Not-obscured requirement — make sure modals, fly-outs, fixed headers, etc., don't cover focused elements; test by tabbing through the page; verify intentionally hidden elements can't receive focus.
+- Default-browser-indicator landscape (at time of lecture) — Safari uses the OS accent color outline that surrounds the button (often low contrast like pink at 2.1:1 on white); Chrome applies a pink outline along the border (often fails on coloured buttons); Edge applies a black outline along the border (fails on dark buttons); Firefox surrounds with a pink outline (fails on light grey at 2:1); Chrome/Edge/Firefox add a secondary white outline visible on dark backgrounds.
+- WCAG-conformance loophole — default browser indicators are EXEMPT from 1.4.11 and 2.4.13 (when unmodified by the author), so a default that's unusable can still "pass" automated conformance checks; replace it anyway for usability.
+- Indicator customisation by users — users can change their default indicator color (e.g., macOS Accent Color); you can't assume any specific default color or contrast.
+- Outside-positioned bonus — an outside indicator increases the visual size of the component when shown, making it easier to spot.
+- Author recommendation — ship the universal black-and-white indicator (or Oreo variant) as a CSS default across projects; aim for maximum visibility over aesthetics.
+
 ### Filter component
 
 - Definition — UI that filters a main content section based on user-selected filters.
@@ -1236,6 +1299,17 @@
 - Anti-pattern: Live region for a chat interface that is NOT the main UI — usually unnecessary; reach for `role="log"` only when chat is the primary surface.
 - Anti-pattern: Requiring users to dismiss an `alert` — per ARIA spec, alerts don't take focus and shouldn't require closure; if focus must move, use `alertdialog`.
 - Anti-pattern: Moving focus to a delayed/async notification the user didn't trigger — disruptive to the user's flow; only move focus as an immediate response to a user action.
+- Anti-pattern: `:focus { outline: none }` or `* { outline: none }` — strips the browser's default focus indicator without replacing it; fails SC 2.4.7 Focus Visible and makes the page essentially unnavigable by keyboard.
+- Anti-pattern: Relying on browser default focus indicators because they "pass" conformance — defaults are exempt from SC 1.4.11 and SC 2.4.13, so technically conforming but frequently unusable; verify contrast against YOUR palette and replace when needed.
+- Anti-pattern: Using a dashed/dotted focus outline at 2px thickness — the gaps reduce area to roughly half a solid outline's perimeter, failing SC 2.4.13 Focus Appearance; double the thickness (e.g., `4px dashed`) to compensate.
+- Anti-pattern: A 2px solid inner outline on a small button — the inner outline's perimeter is smaller than the button's, so even at 2px the area can fall short of the 2px-perimeter requirement; thicken the inner outline.
+- Anti-pattern: Using `border` for a focus indicator — changes box-model dimensions and causes layout shifts when the indicator appears/disappears; use `outline` instead (and `outline-offset` for breathing room).
+- Anti-pattern: Using only `box-shadow` (no `outline`) for focus — box-shadows are overridden in Forced Colors modes (Windows High Contrast Mode), so the indicator disappears for users who depend on it.
+- Anti-pattern: Using `:focus` (instead of `:focus-visible`) for custom focus styles — the indicator then also fires on mouse click / tap; designers and stakeholders dislike this, and modern browsers already suppress default indicators on non-keyboard focus.
+- Anti-pattern: A focus indicator with insufficient contrast against ONE of its two adjacent colors (e.g., a black border indicator on a black button) — fails SC 1.4.11 against that side; verify both adjacent colors.
+- Anti-pattern: A focus color-change that's less than 3:1 between unfocused and focused — fails BOTH SC 2.4.13 (focused/unfocused contrast) AND SC 1.4.1 Use of Color (the state change isn't perceivable without color).
+- Anti-pattern: Letting modals, fly-outs, or fixed headers cover the focused element — fails SC 2.4.11 (entirely hidden) or SC 2.4.12 (any part hidden); tab through the page and check.
+- Anti-pattern: Allowing intentionally hidden elements to receive focus — focus lands on "nothing"; verify by tabbing.
 
 ## Decision Rules
 
@@ -1321,6 +1395,15 @@
 - Decision: Live region vs focus-move — focus-move whenever the notification has interactive content OR represents a page/context change; live region only for short non-interactive status updates.
 - Decision: Live region for chat (`role="log"`) — only when chat IS the main interface on the page; otherwise the live region is overkill.
 - Decision: Live region vs alternative (general) — if you can communicate the update via focus-move, an instructional cue, or a state attribute, prefer that; "the less ARIA you use, the better — no ARIA is better than bad ARIA".
+- Decision: `:focus` vs `:focus-visible` — use `:focus-visible` for custom focus styles so the indicator only appears on keyboard focus; reserve `:focus` only for backwards-compatibility shims around legacy browsers.
+- Decision: Browser default focus indicator vs custom — keep the default only if it has ≥3:1 contrast against your palette in every context; otherwise replace with a custom indicator (e.g., universal black-and-white).
+- Decision: `outline` vs `border` for focus — prefer `outline`; it doesn't participate in the box model so it causes no layout shift; `border` changes the component's dimensions.
+- Decision: `outline` vs `box-shadow` for focus — prefer `outline` for the always-visible component; outlines are retained in Forced Colors modes, box-shadows are overridden; combine the two (outline + same-thickness box-shadow) when you need two stacked outline colors.
+- Decision: Inner vs outer focus outline — prefer outer for most cases (also enlarges the component visually); use inner for items with hidden overflow (e.g., dropdown items) where an outer outline would be clipped, and thicken it to compensate for the smaller perimeter.
+- Decision: Solid vs dashed/dotted focus outline — prefer solid (encloses the component); if dashed/dotted is needed for design reasons, double the thickness so the area still meets the 2px-thick perimeter requirement.
+- Decision: Two-color focus outline vs single-color — use two colors (e.g., black + white) when components vary in background brightness across the site; ensures contrast against any background without per-component overrides.
+- Decision: Two-outline order (black-then-white vs white-then-black) — flip based on the dominant component colors; for predominantly dark components, put white closer to the component for higher contrast against it.
+- Decision: SC 2.4.11 (AA) vs SC 2.4.12 (AAA) for obscuring focus — even when aiming for AA only, prefer the AAA-level "no part obscured" because it's a small extra effort with big usability gains.
 
 ## Keyboard Behaviour
 
@@ -1461,6 +1544,10 @@
 - AT: Live region focus — updating a live region does NOT move the user's focus, and there is no built-in mechanism for users to navigate INTO a live region from elsewhere on the page.
 - AT: Assertive cancels polite — per ARIA spec, when an assertive change occurs the user agent MAY clear all currently queued polite changes, causing some messages to get lost or partially announced.
 - AT: `aria-pressed` button mapping — declaring `aria-pressed` on a `<button>` changes the button's ARIA role mapping in most accessibility APIs, exposing it as a toggle button rather than a regular button.
+- AT: Focus indicator audience — visible focus serves keyboard users AND users of keyboard-emulating AT (speech control, switch controls, mouth sticks, head wands); hiding it shuts all of them out.
+- AT: Forced Colors / Windows High Contrast Mode — `outline` is retained while `box-shadow`, `background-color`, and `border-color` are overridden by system colors; design focus indicators with this in mind.
+- AT: Modern browser default focus indicators — Chrome/Firefox/Edge/Safari only show their defaults on KEYBOARD focus (not mouse click / tap); user agents implement `:focus-visible`-like behaviour automatically for their own indicators.
+- AT: Default focus indicator color customisation — users can override the OS-level accent color (e.g., macOS Settings > Appearance > Accent Color); browsers may inherit that, so the default focus indicator color is user-controlled and unpredictable.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -1548,6 +1635,11 @@
 - Tool: Scott O'Hara's "Are we live?" — warns against "a web page with a bunch of live regions that all start barking at AT users at the same time"; advocates limiting live regions to ideally two or fewer.
 - Tool: Adrian Roselli's article on toast messages — documents the WCAG failures toasts typically violate, especially with interactive elements.
 - Tool: Google Material Design toast documentation — example of the common (but accessibility-failing) interactive-toast pattern; the source many teams reach for when designing toasts.
+- Tool: Color Contrast Analyzer (CCA) — desktop app by TPGi for spot-checking color contrast of any element on the screen (web or native); useful for verifying focus indicator contrast against adjacent colors.
+- Tool: focus-visible JavaScript polyfill — backfills `:focus-visible` behaviour in older browsers (notably IE) so keyboard-only focus styles can be applied consistently.
+- Tool: Erik Kroes' "Oreo-focus" indicator concept — designer-coined name for a black-white-black focus outline (two black outlines around a white middle); maximally visible across any palette.
+- Tool: Patrick Lauke's article on `:focus-visible` and backwards compatibility — demonstrates the `:focus` + `:focus:not(:focus-visible)` undo + optional stronger `:focus-visible` recipe; works in browsers that don't recognise `:focus-visible` because `:not()` containing an unsupported pseudo-class makes the whole rule ignored.
+- Tool: Laura Carvajal "You wouldn't steal their cursor" (Fronteers 2018) — talk highlighting that hiding the focus indicator is equivalent to stealing the keyboard user's mouse cursor.
 - Tool: APG `alertdialog` page — full semantic and keyboard interaction requirements for accessible alert dialogs.
 - Tool: APG Modal Dialog example — keyboard focus management requirements for modal dialogs (referenced when implementing alertdialog or interactive status notifications).
 
@@ -1652,3 +1744,10 @@
 - Term: Instructional cue — a persistent text hint (often via `aria-describedby` or shown at the top of a section) that sets user expectations about what will happen when they interact with a control; often a more robust alternative to live region announcements.
 - Term: Politeness level (`aria-live`) — ordering mechanism for live region updates; assertive items are announced first and may clear queued polite items; polite waits for an opportune moment.
 - Term: accName priority (author's recommended) — HTML content → HTML attribute/element → `aria-labelledby` → `aria-label`; almost the reverse of the formal algorithm.
+- Term: Focus indicator — a visual indicator that "highlights" the currently focused element; typically a rectangular outline; the keyboard user's equivalent of a mouse cursor.
+- Term: Focus indication area — the area, in square CSS pixels, where the color change between the focused and unfocused states of a component happens.
+- Term: Contrasting area — the subset of the focus indication area that has ≥3:1 contrast between the focused and unfocused states; may equal the entire focus indication area (solid color change) or be smaller (gradient or partial-coverage indicator).
+- Term: Adjacent color(s) — the colors next to a component (or, for a focus indicator, the colors next to the indicator's position relative to the component); SC 1.4.11 measures focus-indicator contrast against these.
+- Term: Bound vs surround (focus indicator) — "bound" means the indicator forms a rectangle enclosing the component (e.g., a solid outline); "surround" means the indicator follows the component's actual shape (e.g., a star-shaped outline around a star).
+- Term: Universal focus indicator — a two-color (typically black + white) outline that meets ≥3:1 contrast against any page background; usable as a default focus style across an entire site.
+- Term: Oreo-focus indicator — Erik Kroes' name for a black-white-black focus outline (two black outlines around a white middle); maximally visible across light, dark, and patterned backgrounds.

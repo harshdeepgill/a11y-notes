@@ -376,6 +376,8 @@
 - Rule: The live region container MUST be in the DOM when the browser parses the page and builds the accessibility tree — late-inserted live regions have a high chance of not working.
 - Rule: Hide non-visible live regions with the `visually-hidden` utility class — never with `display: none`, `aria-hidden="true"`, or any technique that removes them from the accessibility tree; hidden live regions are not announced.
 - Rule: Limit live regions to ideally 2 — one assertive + one polite — inserted at page load; route all updates through them and manage the message queue in JavaScript.
+- Rule: The ideal number of live regions on a page is zero — limit to as few as you can; per Scott O'Hara, "if you can create an interface that can limit the number of live regions necessary - none being the ideal - then that'd be for the better".
+- Rule: Carefully choreograph the sequence of events across your live region(s) — this is the best approach for maximum cross-browser/SR compatibility, since assertive updates can clear queued polite ones.
 - Rule: Multiple live regions on a page can interfere; per ARIA spec, when an assertive change occurs the user agent MAY clear queued polite changes — some messages get lost or partially announced.
 - Rule: Pre-compose the live region message and insert it in ONE DOM operation — multiple insertions can produce multiple separate announcements.
 - Rule: Keep live region messages short and succinct; avoid rich content, interactive elements, and non-text elements (images) — they're not conveyed to SR users.
@@ -1027,6 +1029,8 @@
 - Limitation — focus does NOT move to a live region on update, and there's no built-in mechanism for users to navigate INTO one; unsuitable for content with interactive children.
 - Politeness as ordering — assertive items are presented first; per ARIA spec, the user agent MAY clear queued polite changes when an assertive change occurs.
 - Two-region best practice — keep ONE assertive + ONE polite live region inserted at page load; route all updates through them and manage the message queue in JavaScript.
+- Ideal-count guidance — per Scott O'Hara, "none being the ideal"; limit live regions to as few as possible; the two-region pattern is the practical maximum, zero is best.
+- Choreography for max compatibility — carefully sequence the events you push into the two regions so assertive updates don't clear queued polite ones; this is the most reliable approach across browser/SR pairings.
 - Hide technique (reinforced) — `visually-hidden` only; never `display: none` or `aria-hidden="true"`.
 - Message composition — pre-compose the message and insert it in ONE DOM operation; multiple writes can produce multiple announcements.
 - Message brevity — keep it short and succinct; avoid rich content, interactive elements, and images.
@@ -1041,6 +1045,8 @@
 - Relationship to live regions — closest visual equivalent of a live region announcement; both are transient; not all toasts are good candidates for live regions (some are too low-priority or repetitive to interrupt or announce).
 - Persistence option — if you need users to be able to review past toasts, collect them in a notifications centre or similar persistent UI.
 - Interactive-content problem — toasts that contain buttons or links don't work for AT users; semantics are stripped when announced via a live region, focus doesn't move, and the toast may auto-dismiss before users can act.
+- Broader impact — toasts with interactive elements also hurt magnifier users and keyboard users, not only screen-reader users.
+- Material Design reference — Google's Material Design system documents interactive-element toasts; common in the wild but typically accessibility-failing (per Adrian Roselli's WCAG analysis).
 - WCAG failures — toasts (especially with interactive elements) typically violate multiple SCs (per Adrian Roselli's documented list).
 - Better alternatives — for actionable notifications, use `alertdialog` (alert + dialog) or a modal/non-modal dialog instead of a toast; move focus to it as an immediate response to the user's action.
 - Async-focus gotcha — don't move focus to a toast the user didn't summon (background event, delayed appearance); only move focus as an immediate response to a user action.
@@ -1541,6 +1547,7 @@
 - Tool: Scott O'Hara's "Considering dynamic search results and content" — usability considerations and a robust implementation pattern for dynamic search components (aria-describedby + no-results live region + focus-move-to-heading on Enter + Escape returns to input).
 - Tool: Scott O'Hara's "Are we live?" — warns against "a web page with a bunch of live regions that all start barking at AT users at the same time"; advocates limiting live regions to ideally two or fewer.
 - Tool: Adrian Roselli's article on toast messages — documents the WCAG failures toasts typically violate, especially with interactive elements.
+- Tool: Google Material Design toast documentation — example of the common (but accessibility-failing) interactive-toast pattern; the source many teams reach for when designing toasts.
 - Tool: APG `alertdialog` page — full semantic and keyboard interaction requirements for accessible alert dialogs.
 - Tool: APG Modal Dialog example — keyboard focus management requirements for modal dialogs (referenced when implementing alertdialog or interactive status notifications).
 

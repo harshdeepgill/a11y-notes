@@ -357,6 +357,36 @@
 - Rule: Live region roles add SEMANTIC meaning — some SRs prefix announcements with the role (e.g., "Alert: …", "Status: …"); plain `aria-live` does not add this prefix.
 - Rule: Live region roles accept an accessible name (unlike a name-prohibited `<div aria-live>`); use `aria-labelledby`/`aria-label` for context when multiple live regions coexist (e.g., "Shopping cart, 5 items").
 - Rule: `<output>` is the only native HTML live region element — implicit `status` role (polite live region), labelable via `<label>`; current cross-AT announcement is inconsistent.
+- Rule: Live regions DON'T handle rich text — the semantics of headings, lists, links, buttons, and other structural/interactive elements inside the region are NOT conveyed; content is announced as one long flat string.
+- Rule: Don't wrap entire sections of content in a live region — the whole section's content announces as one flat string; a bad user experience.
+- Rule: For filter components, add a persistent instructional cue at the top of the filters ("Changing filters will change the listed…") instead of making the result section a live region — sets expectations for all users.
+- Rule: For dynamic search components, attach an accessible description to the input via `aria-describedby` ("Results will filter as you type") instead of designating the results container as a live region — less noisy and more robust.
+- Rule: For dynamic search, use an assertive live region only to announce "No results found" — interrupt-worthy, but not the full results stream.
+- Rule: For dynamic search, on Enter move keyboard focus to the heading that introduces the results (SR announces the result count); on Escape return focus to the search input.
+- Rule: Don't use live regions for messages or notifications that contain INTERACTIVE elements — semantics are lost AND there's no built-in mechanism for users to navigate INTO a live region.
+- Rule: Toast messages with interactive elements are problematic — semantics lost, no clear navigation path, may auto-dismiss before the user reaches them; typically violate multiple WCAG SCs (per Adrian Roselli).
+- Rule: Per ARIA spec, an element with `role="status"` SHOULD NOT receive focus as a result of a change in status.
+- Rule: Per ARIA spec, an `alert` should NOT require the user to close it; if focus must move when the message appears, use `role="alertdialog"` instead.
+- Rule: For interactive alert notifications, use `role="alertdialog"` (a mashup of `dialog` and `alert`) and manage focus per APG modal-dialog requirements; for status notifications with interactive elements, use a modal or non-modal dialog.
+- Rule: Using `alertdialog` to alert users to the presence of errors is an advisory technique to meet SC 4.1.3 Status Messages.
+- Rule: Move focus only as an IMMEDIATE response to a user action — don't move focus to async/delayed UI (e.g., a toast the user didn't summon), or you'll disrupt their flow.
+- Rule: Don't use live regions to substitute for ARIA state attributes — use `aria-expanded`, `aria-pressed`, `aria-current`, etc., when they fit the change.
+- Rule: `aria-pressed` on a `<button>` changes the button's ARIA mapping in most accessibility APIs and exposes it as a toggle button (not just a regular button).
+- Rule: Live regions are most suited for SHORT, non-interactive status messages that cause no change of context; they are currently the primary way to conform with SC 4.1.3 Status Messages.
+- Rule: The live region container MUST be in the DOM when the browser parses the page and builds the accessibility tree — late-inserted live regions have a high chance of not working.
+- Rule: Hide non-visible live regions with the `visually-hidden` utility class — never with `display: none`, `aria-hidden="true"`, or any technique that removes them from the accessibility tree; hidden live regions are not announced.
+- Rule: Limit live regions to ideally 2 — one assertive + one polite — inserted at page load; route all updates through them and manage the message queue in JavaScript.
+- Rule: Multiple live regions on a page can interfere; per ARIA spec, when an assertive change occurs the user agent MAY clear queued polite changes — some messages get lost or partially announced.
+- Rule: Pre-compose the live region message and insert it in ONE DOM operation — multiple insertions can produce multiple separate announcements.
+- Rule: Keep live region messages short and succinct; avoid rich content, interactive elements, and non-text elements (images) — they're not conveyed to SR users.
+- Rule: Set a 350–500ms timeout to empty the live region between updates — prevents weird/duplicate announcements and keeps users from navigating to a hidden region inadvertently.
+- Rule: ARIA live region property values (`aria-live`, `aria-relevant`, `aria-atomic`) are STRONG SUGGESTIONS — browsers, AT, or user preferences may override behaviour; you cannot guarantee a live region behaves exactly as designed.
+- Rule: Avoid live regions if you can — they're inconsistent and unpredictable; prefer more robust alternatives (instructional cues, focus-move, state attributes) whenever possible.
+- Rule: Not everything that updates in the background needs to be a live region.
+- Rule: Chat interfaces (`role="log"`) only warrant a live region when the chat is the MAIN interface on the page.
+- Rule: For SPA navigation, move keyboard focus to the new page's main `<h1>` instead of using a live region; also update the page `<title>` so it changes too.
+- Rule: For "item added to cart" notifications, prefer a modal cart overlay + focus-move to it (treat as a modal dialog) over a live region announcement.
+- Rule: Test live regions across browser/SR pairings AND Braille displays AND with usability tests on SR users — and periodically retest, since AT behaviour changes.
 
 ## HTML Elements
 
@@ -454,6 +484,7 @@
 - Role: `log` — live region role representing a region where new information is added in meaningful order and old information may disappear (chat logs, messaging history, game log, error log); implicit `aria-live="polite"`; new info added only to the end of the log, not at arbitrary points; current cross-AT support is poor.
 - Role: `marquee` — live region role for non-essential information that changes frequently (stock tickers); implicit `aria-live="off"`; primary difference from `log` is that logs have a meaningful order; support is poor; in danger of deprecation from the ARIA spec.
 - Role: `timer` — live region role representing a numerical counter that indicates elapsed time from a start point or time remaining until an end point; implicit `aria-live="off"`; support is poor; in danger of deprecation from the ARIA spec.
+- Role: `alertdialog` — a mashup of the `dialog` and `alert` roles; represents a dialog containing an alert message; expects the same keyboard interactions as a modal dialog; used when an interactive alert notification needs to receive focus AND requires the user to act on it (replaces toast-with-buttons patterns); APG documents the full semantic and keyboard requirements.
 
 ## Attributes
 
@@ -667,6 +698,13 @@
 - Pattern: Skeleton screen with `aria-busy` + separate live region — set `aria-busy="true"` on the loading section and add a separate visually-hidden `<div aria-live="polite">Loading content…</div>`; flip `aria-busy` to `false` and update the live region to "Content loaded." once content arrives. Workaround for poor `aria-busy` support: hide the busy region with `aria-hidden="true"` and remove when done (per Adrian Roselli's "More Accessible Skeletons").
 - Pattern: Named live region — give a live region role (e.g., `role="status"`) an `aria-labelledby` to a visible heading or label so the announcement includes the region's name (e.g., "Shopping cart, 5 items"); useful when multiple live regions coexist on a page.
 - Pattern: `<output>` for calculation results — `<label for="result">Your total is:</label><output id="result"> </output>`; updates to the output's content are announced as a polite live region (where AT support permits).
+- Pattern: Filter component without a live region — add a persistent instructional cue at the top of the filter group (e.g., "Changing filters will change the listed Success Criteria and Techniques"); sets expectations for all users; no live region needed.
+- Pattern: Dynamic search component (Scott O'Hara) — attach an accessible description to the input via `aria-describedby` ("Results will filter as you type"); add an ASSERTIVE live region used ONLY for the "No results found" announcement; on Enter move focus to the heading that introduces the results (SR announces the result count); on Escape return focus to the input.
+- Pattern: Interactive alert notification — render with `role="alertdialog"` (dialog + alert keyboard behaviour); move focus to the dialog when it appears; manage focus per APG modal-dialog requirements; replaces toast-with-buttons patterns.
+- Pattern: Interactive status notification — use a modal or non-modal dialog (per APG modal dialog example); manage focus when shown.
+- Pattern: SPA navigation announcement — when an in-app link changes the page without a refresh, update the `<title>` AND move keyboard focus to the new page's main `<h1>`; SR announces the heading content, giving the same context the page title would; helps keyboard users avoid tabbing through many elements to reach new content.
+- Pattern: Item-added-to-cart overlay — render a modal cart overlay and move keyboard focus to it instead of announcing "added to cart" via a live region; treat as a modal dialog (manage focus, dim background); keyboard/SR users land in the cart with options to edit or check out.
+- Pattern: Empty-and-wait live region between updates — `setTimeout(() => { /* empty region */ }, 350)` after each announcement so the next update is reliably detected; clears stale text from being navigable when hidden.
 
 ## Complex Components
 
@@ -985,12 +1023,27 @@
 - Role support landscape — `alert` and `status` have generally good support; `log`/`marquee`/`timer` have poor or no support; `marquee` and `timer` are in danger of being deprecated from the ARIA spec.
 - Naming — provide an accessible name (e.g., `<div role="status" aria-labelledby="cart-label">` referencing a visible "Shopping Cart" label) when multiple live regions coexist or context would otherwise be lost (e.g., "Shopping cart, 5 items").
 - `<output>` — the only native HTML live region element; implicit `status` role (polite); labelable; cross-AT announcement is inconsistent today.
+- Limitation — rich text inside a live region is stripped; interactive/structural element semantics are NOT conveyed; content is announced as one flat string.
+- Limitation — focus does NOT move to a live region on update, and there's no built-in mechanism for users to navigate INTO one; unsuitable for content with interactive children.
+- Politeness as ordering — assertive items are presented first; per ARIA spec, the user agent MAY clear queued polite changes when an assertive change occurs.
+- Two-region best practice — keep ONE assertive + ONE polite live region inserted at page load; route all updates through them and manage the message queue in JavaScript.
+- Hide technique (reinforced) — `visually-hidden` only; never `display: none` or `aria-hidden="true"`.
+- Message composition — pre-compose the message and insert it in ONE DOM operation; multiple writes can produce multiple announcements.
+- Message brevity — keep it short and succinct; avoid rich content, interactive elements, and images.
+- Empty-and-wait — set a 350–500ms timeout to empty the container between updates; prevents weird/duplicate announcements and keeps users from navigating to a hidden region inadvertently.
+- Property overrides — `aria-live`/`aria-relevant`/`aria-atomic` values are strong suggestions; user agents, AT, and user preferences may override them.
+- Avoid-if-possible — many UI patterns can communicate updates without live regions (instructional cues, focus-move, state attributes); reach for live regions only when no better option exists.
+- Testing — across browser/SR pairings, Braille displays, AND usability tests with SR users; periodically retest as AT behaviour changes.
 
 ### Toast
 
 - Definition — a message presenting timely information (action confirmations, statuses, alerts) that typically auto-expires after a few seconds; once gone, the user cannot review it.
 - Relationship to live regions — closest visual equivalent of a live region announcement; both are transient; not all toasts are good candidates for live regions (some are too low-priority or repetitive to interrupt or announce).
 - Persistence option — if you need users to be able to review past toasts, collect them in a notifications centre or similar persistent UI.
+- Interactive-content problem — toasts that contain buttons or links don't work for AT users; semantics are stripped when announced via a live region, focus doesn't move, and the toast may auto-dismiss before users can act.
+- WCAG failures — toasts (especially with interactive elements) typically violate multiple SCs (per Adrian Roselli's documented list).
+- Better alternatives — for actionable notifications, use `alertdialog` (alert + dialog) or a modal/non-modal dialog instead of a toast; move focus to it as an immediate response to the user's action.
+- Async-focus gotcha — don't move focus to a toast the user didn't summon (background event, delayed appearance); only move focus as an immediate response to a user action.
 
 ### Skeleton screen
 
@@ -999,6 +1052,34 @@
 - Loaded state — flip `aria-busy="false"` AND update the live region to "Content loaded." once content has arrived.
 - `aria-busy` support gap — most SRs except JAWS read the busy region's content despite `aria-busy="true"`; a sub-optimal experience.
 - Recommended workaround — hide the busy region with `aria-hidden="true"` while loading and remove it once content is ready (per Adrian Roselli's "More Accessible Skeletons" — his solution doesn't require live regions at all).
+
+### Alertdialog
+
+- Definition — a mashup of the `dialog` and `alert` roles; represents a dialog containing an alert message; used when an interactive alert notification needs focus AND the user must act on it.
+- ARIA — `role="alertdialog"`; expects the same keyboard interactions as a modal dialog (Escape to dismiss, focus trap, etc.).
+- When to use — interactive alert notifications (replaces toast-with-buttons patterns); appropriate for "must take action" scenarios.
+- Focus — focus moves to the dialog when it appears; manage focus per APG modal-dialog requirements (initial focus inside, return focus to trigger on close).
+- WCAG — using `alertdialog` to alert users to errors is an advisory technique for SC 4.1.3 Status Messages.
+- Reference — APG documents the full semantic and keyboard interaction requirements.
+
+### Dynamic search
+
+- Definition — a search input that filters or displays results live as the user types.
+- Don't make the results container a live region — produces a very noisy SR experience as the user types.
+- Instructional cue — `aria-describedby` from the input to a description ("Results will filter as you type" / "Features will be filtered as you type") so users know what to expect.
+- Visually-hidden description option — if you don't want the cue to be visible, hide it via `visually-hidden` and still associate it via `aria-describedby`.
+- No-results announcement — an ASSERTIVE live region announces "No results found" so users immediately know their query stopped returning matches (interrupt-worthy event).
+- Enter behaviour — moves keyboard focus to the heading introducing the results; SR announces the heading's content (including the count of results).
+- Escape behaviour — returns keyboard focus to the search input.
+- Reference — Scott O'Hara's "Considering dynamic search results and content" article + demo.
+
+### Filter component
+
+- Definition — UI that filters a main content section based on user-selected filters.
+- Don't make the result section a live region — entire-section content announcing as one flat string is a bad experience and strips semantics.
+- Instructional cue — persistent note at the top of the filter group (e.g., "Changing filters will change the listed Success Criteria and Techniques") sets expectations for all users.
+- Result — no live region needed; SR users navigate to the main area when ready to explore filtered results.
+- Reference — WCAG Quick Reference website implements this pattern in its left-sidebar filters.
 
 ## Anti-Patterns
 
@@ -1139,6 +1220,16 @@
 - Anti-pattern: Confusing the "live region" with the `region` landmark — different concepts (live region is the notification system; the landmark is page-structural).
 - Anti-pattern: Relying on `aria-relevant`/`aria-atomic`/`aria-busy` for behaviour today — cross-AT support is inconsistent; updates may announce in ways you didn't intend.
 - Anti-pattern: `aria-live` on a name-prohibited element (`<div>`) when you need an accessible name on the live region — switch to a live region role (`role="status"`/`role="alert"`) which provides a meaningful role AND accepts an accName.
+- Anti-pattern: Wrapping entire sections of content in a live region — semantics stripped; the section announces as one long flat string of text.
+- Anti-pattern: Making a dynamic-search results container a live region — produces a noisy stream of announcements as the user types; use an instructional cue + a "no results" assertive region instead.
+- Anti-pattern: Toast messages with interactive elements — semantics lost, no focus path, may auto-dismiss before users can act; typically violate multiple WCAG SCs.
+- Anti-pattern: Live region used instead of `aria-expanded` / `aria-pressed` / `aria-current` — the state attribute already conveys the change; no announcement is needed.
+- Anti-pattern: Multiple live regions on a page interfering — assertive announcements may clear queued polite items per ARIA spec; messages get lost or partially announced.
+- Anti-pattern: Multiple DOM insertions to build one live region message — may produce multiple separate announcements instead of one.
+- Anti-pattern: Live region for SPA page-change announcements — move focus to the new page's `<h1>` (and update `<title>`) instead; more efficient for keyboard and SR users.
+- Anti-pattern: Live region for a chat interface that is NOT the main UI — usually unnecessary; reach for `role="log"` only when chat is the primary surface.
+- Anti-pattern: Requiring users to dismiss an `alert` — per ARIA spec, alerts don't take focus and shouldn't require closure; if focus must move, use `alertdialog`.
+- Anti-pattern: Moving focus to a delayed/async notification the user didn't trigger — disruptive to the user's flow; only move focus as an immediate response to a user action.
 
 ## Decision Rules
 
@@ -1217,6 +1308,13 @@
 - Decision: Live region vs persistent UI — prefer persistent whenever you can; live region announcements are transient and gone forever once made.
 - Decision: Skeleton-screen `aria-busy` vs `aria-hidden` workaround — `aria-hidden="true"` is currently more reliable than `aria-busy="true"` across SRs; fall back to the `aria-hidden` workaround until support improves.
 - Decision: `<output>` vs custom live region — `<output>` is native and labelable but has inconsistent cross-AT announcement; use it where calculation/result semantics fit, but verify in your audience's pairings.
+- Decision: Live region vs instructional cue — prefer a persistent instructional cue ("Results will filter as you type", "Changing filters will change…") that sets expectations; no announcement needed when users already know the result will arrive.
+- Decision: Live region vs ARIA state attribute — when a state attribute (`aria-expanded`, `aria-pressed`, `aria-current`, etc.) fits the change, use the state attribute; no live region needed.
+- Decision: `alert` vs `alertdialog` — `alert` for short non-interactive messages; `alertdialog` when the alert contains interactive elements and the user must act on it.
+- Decision: Toast-with-action vs `alertdialog` — when the notification has actionable elements, use `alertdialog` (or a dialog) with focus management; toast-with-buttons is an anti-pattern.
+- Decision: Live region vs focus-move — focus-move whenever the notification has interactive content OR represents a page/context change; live region only for short non-interactive status updates.
+- Decision: Live region for chat (`role="log"`) — only when chat IS the main interface on the page; otherwise the live region is overkill.
+- Decision: Live region vs alternative (general) — if you can communicate the update via focus-move, an instructional cue, or a state attribute, prefer that; "the less ARIA you use, the better — no ARIA is better than bad ARIA".
 
 ## Keyboard Behaviour
 
@@ -1353,6 +1451,10 @@
 - AT: `aria-busy` support — most SRs (except JAWS) ignore the suspension and read the busy region's content anyway, producing a sub-optimal experience.
 - AT: `<output>` cross-AT — VoiceOver+Safari reads the output's content but NOT its accName; NVDA+Firefox doesn't read the accName either; VoiceOver+Chrome reads both as intended.
 - AT: VoiceOver+Safari `<output>` quirk — announces the INITIAL total value before announcing the updated total every time it makes an announcement.
+- AT: Live region rich-text flattening — content inside a live region is announced as one flat string; the semantics of any headings/lists/links/buttons inside are NOT conveyed in the announcement.
+- AT: Live region focus — updating a live region does NOT move the user's focus, and there is no built-in mechanism for users to navigate INTO a live region from elsewhere on the page.
+- AT: Assertive cancels polite — per ARIA spec, when an assertive change occurs the user agent MAY clear all currently queued polite changes, causing some messages to get lost or partially announced.
+- AT: `aria-pressed` button mapping — declaring `aria-pressed` on a `<button>` changes the button's ARIA role mapping in most accessibility APIs, exposing it as a toggle button rather than a regular button.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -1435,6 +1537,12 @@
 - Tool: Adrian Roselli's "More Accessible Skeletons" — accessible skeleton screen solution with a live demo; provides an approach that doesn't require live regions at all.
 - Tool: Scott O'Hara's article on the `<output>` element — details current support state, quirks, and workarounds for `<output>`'s announcement inconsistencies.
 - Tool: Ugi Kutluoglu's SR analogies — "cassette tape" (rewind/forward/play SR navigation) and "livestream" (live region announcement) — useful mental models for explaining SR behaviour.
+- Tool: NerdeRegion browser extension — DevTools extension that lists active ARIA live regions on a page, keeps a timestamped record of mutations, and (in beta) inspects accessible name computation; helps verify whether a live region is being updated/reused correctly and whether issues are caused by your code or the device combination.
+- Tool: Scott O'Hara's "Considering dynamic search results and content" — usability considerations and a robust implementation pattern for dynamic search components (aria-describedby + no-results live region + focus-move-to-heading on Enter + Escape returns to input).
+- Tool: Scott O'Hara's "Are we live?" — warns against "a web page with a bunch of live regions that all start barking at AT users at the same time"; advocates limiting live regions to ideally two or fewer.
+- Tool: Adrian Roselli's article on toast messages — documents the WCAG failures toasts typically violate, especially with interactive elements.
+- Tool: APG `alertdialog` page — full semantic and keyboard interaction requirements for accessible alert dialogs.
+- Tool: APG Modal Dialog example — keyboard focus management requirements for modal dialogs (referenced when implementing alertdialog or interactive status notifications).
 
 ## Glossary
 
@@ -1532,4 +1640,8 @@
 - Term: Toast — a message presenting timely information (action confirmations, statuses, alerts) that typically auto-expires after a few seconds; closest visual equivalent of a live region announcement; the user cannot review it once it disappears.
 - Term: Skeleton screen — a loading indicator shown in place of a section's content while it loads; provides a wireframe-like visual that mimics the eventual layout, helping users build a mental model of what will be on the page.
 - Term: Live region roles (5) — `alert`, `status`, `log`, `marquee`, `timer`; each has implicit `aria-live` and `aria-atomic` defaults; `alert`/`status` have generally good support; `log`/`marquee`/`timer` are poorly supported and the latter two are in danger of deprecation.
+- Term: Alertdialog — a type of dialog that contains an alert message; combines the `dialog` and `alert` roles; used for interactive alert notifications the user must act on.
+- Term: Toggle button — a `<button>` carrying `aria-pressed` whose ARIA mapping changes in most accessibility APIs to indicate that the button toggles a piece of functionality On and Off.
+- Term: Instructional cue — a persistent text hint (often via `aria-describedby` or shown at the top of a section) that sets user expectations about what will happen when they interact with a control; often a more robust alternative to live region announcements.
+- Term: Politeness level (`aria-live`) — ordering mechanism for live region updates; assertive items are announced first and may clear queued polite items; polite waits for an opportune moment.
 - Term: accName priority (author's recommended) — HTML content → HTML attribute/element → `aria-labelledby` → `aria-label`; almost the reverse of the formal algorithm.

@@ -300,6 +300,38 @@
 - Rule: `aria-errormessage` MUST be paired with `aria-invalid` — the error message is only announced when `aria-invalid="true"`; otherwise it must be hidden from all users.
 - Rule: Use inline SVG error icons with `fill="currentColor"` so the icon inherits the error text color and adapts to Forced Colors Mode.
 - Rule: Give the error-icon SVG an accessible name via `aria-label="Error:"` OR hide it with `aria-hidden="true"` and add a visually-hidden "Error:" text node inside the message.
+- Rule: Treat client-side validation as an enhancement on top of server-side validation — server-side validation always happens after submission.
+- Rule: Client-side validation can happen on form submission OR inline (while typing on keypress, or on blur).
+- Rule: Do NOT disable the Submit button until the form is completed — disabled buttons exclude many users with disabilities (low-contrast state, removed from tab order, invisible to SR users, confusing for cognitive/learning disabilities).
+- Rule: WCAG conformance does not guarantee usability — disabled controls are EXEMPT from SC 1.4.3 contrast requirements but still create real usability barriers.
+- Rule: Keep the submit button enabled; use the submit event to guide users (per Josh Comeau: "we know the user's intent: they think the form is good… It's the perfect time to tell them 'Hey, you need to do X'").
+- Rule: On submission with errors, intercept with JS, validate, and render the error feedback; if JS isn't available, allow submission and validate on the server.
+- Rule: On submit error, render an error summary above the form — an ordered list of error→link items, one per invalid field — and announce it to SR users.
+- Rule: Announce the error summary by MOVING FOCUS to it (preferred when it contains links) OR by designating it as a live region (when it doesn't).
+- Rule: Rule of thumb for newly added content — if it contains one or more interactive elements, MOVE focus instead of making it a live region.
+- Rule: Give the error summary a distinctive heading and a meaningful role (e.g., `role="group"`) named via `aria-labelledby` referencing the heading — `<div>` is name-prohibited so the role is needed for the accessible name.
+- Rule: Use `tabindex="-1"` to make the summary container or heading programmatically focusable without adding it to the natural tab order; call `.focus()` after the summary renders.
+- Rule: Prefer moving focus to the summary's HEADING — moving focus to the container causes some SRs (NVDA) to read the entire summary, which can be overwhelming.
+- Rule: Complement the error summary with inline error messages on each invalid field; wording in the summary should match the inline messages.
+- Rule: When a link in the summary is activated, focus moves to the invalid input — the SR should then announce that the field is invalid (via `aria-invalid="true"`) and why (via `aria-describedby`).
+- Rule: For fields that have both instructions and an error, include BOTH ids in `aria-describedby` with the error id BEFORE the instructions id so the error is announced first.
+- Rule: For server-side validation page reloads, prefix the page `<title>` with "Error" (e.g., `<title>2 Errors — Billing Address</title>`) — the title is the first thing SR users hear when the page loads.
+- Rule: On successful submission with a reload, put a success message in `<title>` (e.g., `<title>Success! Thank you for submitting your order</title>`).
+- Rule: For very short forms (1–2 fields, like a login form), a form-level error message without per-field links may suffice — make the container a live region (no focus-move).
+- Rule: For inline validation, each per-field error message container should be a live region — place the empty container in the markup so it's there when the DOM loads, then populate it via JS when an error is detected.
+- Rule: Use `aria-live="assertive"` for error live regions to interrupt the user with immediate attention.
+- Rule: `aria-live` accepts `assertive`, `polite`, or `off` (equivalent to removing the attribute).
+- Rule: `role="alert"` has an IMPLICIT `aria-live="assertive"` — either approach designates an error live region.
+- Rule: Live region roles add SEMANTIC meaning — some SRs announce "alert" before the content; plain `aria-live` does not add this label.
+- Rule: Empty the live region container BEFORE repopulating it with a new message — improves the chance that SRs reliably notice the update.
+- Rule: Inline validation should only fire AFTER the input has changed — users often tab through a form to scan its structure; don't show errors prematurely.
+- Rule: For inline validation, prefer on-BLUR over on-keypress — on-keypress is unreliably announced by JAWS and VoiceOver, so users may not know their input is invalid.
+- Rule: Different fields may need different inline-validation timings — pick per field, only when usability research supports it.
+- Rule: Even with live regions, some users may still miss inline error messages — test in the browser/SR pairings your audience uses.
+- Rule: `aria-describedby` is currently more robust than `aria-errormessage` for associating error messages with their fields (per Adrian Roselli).
+- Rule: Treat inline validation as an enhancement; always combine with on-submit validation as a fallback — error summaries on submit are more bullet-proof.
+- Rule: Allow resubmission and revalidation of the form after errors are fixed.
+- Rule: For multi-field group errors (per GOV.UK), link to the FIRST field with an error; for radio/checkbox groups, link to the first option; if unsure which field has the error, link to the first field.
 
 ## HTML Elements
 
@@ -392,6 +424,7 @@
 - Role: Name-prohibited roles — `caption`, `code`, `definition`, `deletion`, `emphasis`, `generic`, `insertion`, `mark`, `paragraph`, `presentation`, `strong`, `subscript`, `suggestion`, `superscript`, `term`, `time`; any element mapping (implicitly or explicitly) to one of these roles cannot have an accessible name.
 - Role: `none` — synonym of `presentation`; preferred wording because it is less likely to be misread as "hide this element"; same suppression rules and exceptions apply.
 - Role: `radiogroup` — composite widget role representing a group of radio buttons that can only have a single entry checked at any one time; supports `aria-required` but NOT the HTML `required` attribute; used to override `<fieldset>`'s implicit `group` role when the group needs to be marked required.
+- Role: `alert` — live region role representing important, usually time-sensitive information (e.g., an error message); has an implicit `aria-live="assertive"` so AT users are notified immediately when content is inserted into the element; adds explicit "alert" semantics that some SRs announce before the content.
 
 ## Attributes
 
@@ -416,7 +449,7 @@
 - Attribute: `disabled` — Boolean HTML attribute that disables an interactive element — typically a form control such as `<button>`, `<input>`, `<select>`, or `<fieldset>` (cascades to all descendants); any value (or no value) disables the element because `disabled` is boolean. When set, the element no longer receives keyboard focus or mouse events and is removed from the tab order; it remains in the accessibility tree and screen readers announce the disabled state. Does not apply to links. Browsers often render disabled controls in low-contrast grey — author styles must restore visual accessibility.
 - Attribute: `required` — HTML boolean attribute on form controls; programmatically marks the field as required. Functionally equivalent to `aria-required="true"`, but causes some browser/SR pairings to announce the field as invalid by default — before the user has typed anything. Prefer `aria-required` for usability; if you must use `required`, set `aria-invalid="false"` initially to suppress the unwanted default invalid announcement. Not valid on `<fieldset>` or on `role="radiogroup"`. Always pair with a visible in-text indicator (e.g., "Required" in the label).
 - Attribute: `download` — `<a>` attribute that triggers a file download instead of navigation.
-- Attribute: `tabindex` — Controls focusability and tab order; `tabindex="0"` makes an otherwise non-focusable element focusable; a negative integer (e.g., `tabindex="-1"`) on an interactive element removes it from the page's tabbing order while keeping it focusable programmatically and via mouse; cannot be used to make an element non-focusable — only `disabled` or `inert` can.
+- Attribute: `tabindex` — Controls focusability and tab order; `tabindex="0"` makes an otherwise non-focusable element focusable; a negative integer (e.g., `tabindex="-1"`) on an interactive element removes it from the page's tabbing order while keeping it focusable programmatically and via mouse — also used on non-interactive containers/headings (e.g., an error summary or its `<h2>`) to make them programmatically focusable so JavaScript can move focus to them via `.focus()`; cannot be used to make an element non-focusable — only `disabled` or `inert` can.
 - Attribute: `inert` — Boolean HTML attribute on a region; the region and all descendants are visually rendered but are NOT exposed to accessibility APIs, are completely non-interactive (not keyboard-accessible), and are not targeted by any user-interaction events (mouse, touch included). Useful for the page content outside a custom modal dialog so that no interaction happens behind the backdrop. The `<dialog>` element provides this behaviour for free when used in modal mode.
 - Attribute: `lang` — HTML attribute identifying the natural language of an element's content via an IANA language subtag (e.g., `en`, `de`, `en-gb`); inherited by descendants; can be overridden on any nested element; required on `<html>` for SC 3.1.1 and on inline wrappers (e.g., `<span lang="fr">`) for SC 3.1.2; also affects browser hyphenation (CSS `hyphens`), `<q>` quotation-mark rendering, auto-translation prompts, spell/grammar checkers, and `:lang()` CSS targeting.
 - Attribute: `hidden` — HTML attribute that hides an element from rendering and removes it from the accessibility tree; when the hidden element is referenced via `aria-labelledby`, the browser still exposes its text as the accessible name for the referencing element — useful for providing a name without leaving the text node as a separate reading stop for screen readers; pairing `hidden` with `aria-hidden="true"` is redundant. Supports two states — the default (`hidden`) state applies `display: none`, while the "until-found" state (`hidden="until-found"`) keeps the content discoverable to browser find-in-page and fragment navigation by using `content-visibility: hidden` instead of `display: none`; in until-found the element still generates a box, so apply padding/borders/backgrounds to a child container; once revealed via find-in-page the content stays visible (no native way to recollapse); `display: none`, `display: contents`, or `display: inline` on the until-found element prevents reveal. Chromium-only support at the time of the lecture; part of the Interop 2025 project.
@@ -447,6 +480,7 @@
 - Attribute: `step` — HTML attribute on `<input type="number">` (and similar) specifying the numerical step increment.
 - Attribute: `novalidate` — HTML boolean attribute on `<form>`; suppresses the browser's automatic form validation and default error-bubble messages so you can supply your own via JavaScript.
 - Attribute: `formnovalidate` — HTML boolean attribute on submit `<button>` or `<input type="submit">`; disables the form's automatic validation when that specific submission is used.
+- Attribute: `aria-live` — declares an element as a live region whose updates SRs should announce; accepts `assertive` (interrupts the user immediately — typical for error messages), `polite` (waits for an opportune moment), or `off` (equivalent to removing the attribute); plain `aria-live` does NOT add semantic meaning the way live region roles (`alert`, `status`) do.
 
 ## WCAG Success Criteria
 
@@ -472,6 +506,7 @@
 - WCAG: SC 3.3.1 Error Identification (Level A) — "If an input error is automatically detected, the item that is in error is identified and the error is described to the user in text." The benefit of text is that it helps people with cognitive, language, and learning disabilities who have difficulty understanding meaning represented by icons or other visual cues.
 - WCAG: SC 3.3.3 Error Suggestion (Level AA) — "If an input error is automatically detected and suggestions for correction are known, then the suggestions are provided to the user, unless it would jeopardize the security or purpose of the content." Helps users with learning disabilities fill in forms successfully and reduces the number of times users with motion impairments need to change an input value.
 - WCAG: SC 1.4.1 Use of Color (Level A) — color must not be the only means of conveying information; for invalid-state communication, pair red styling with an icon or text so users with color blindness can still perceive the state.
+- WCAG: SC 1.4.3 Contrast (Minimum) (Level AA) — disabled controls and other "inactive user interface components" are EXEMPT from the minimum contrast requirement; the exemption is technical only — disabled controls still create real usability barriers for users with low vision, so aim for usability beyond conformance.
 
 ## Patterns & Recipes
 
@@ -585,6 +620,14 @@
 - Pattern: Associate an error message via `aria-errormessage` — `<input … aria-invalid="true" aria-errormessage="email_error"><p id="email_error">Please provide an email address.</p>`; pair with `aria-invalid="true"` and hide the message from all users when not invalid.
 - Pattern: Inline SVG error icon with `currentColor` — `<p id="email_error"><svg aria-label="Error:" fill="currentColor">…</svg> This email address does not exist.</p>`; the icon inherits the message text color and adapts to Forced Colors Mode.
 - Pattern: Visually-hidden "Error:" alternative — `<svg aria-hidden="true">…</svg><span class="visually-hidden">Error: </span> This email address does not exist.`.
+- Pattern: Submit-time error summary — render `<div tabindex="-1" role="group" aria-labelledby="error-summary-title"><h2 id="error-summary-title">There were N errors found…</h2><ol><li><a href="#email">…</a></li>…</ol></div>` above the form; after rendering, call `.focus()` on the heading (or container) so SRs announce the summary; each list item links to the corresponding invalid field.
+- Pattern: Move focus to the error summary heading — anchor `tabindex="-1"` on the `<h2>` and call `heading.focus()` after the summary is added; SR announces the heading's role + content; less overwhelming than focusing the container which causes NVDA to read everything inside.
+- Pattern: Server-reload error notification — set `<title>2 Errors — Billing Address</title>` (or similar, leading with the error count) so it's the first thing announced when the page loads; pair with on-page summary + per-field inline messages.
+- Pattern: Server-reload success notification — set `<title>Success! Thank you for submitting your order</title>` so successful submission is announced on reload.
+- Pattern: Form-level error for short forms — for 1–2-field forms (login), show a single form-level error without per-field links; designate the container `aria-live="assertive"` (or `role="alert"`) so SRs are notified without focus-move.
+- Pattern: Inline error live region — place an empty `<p id="email-error" aria-live="assertive">` (or `role="alert"`) in the markup; populate via JS when validation fails; empty the container BEFORE repopulating to ensure SR notification.
+- Pattern: Ordered error + instructions via `aria-describedby` — `<input … aria-describedby="error_id instructions_id">` puts the error description first in the announcement, then the instructions.
+- Pattern: Multi-field group error link (GOV.UK) — for date inputs (day/month/year), link the summary entry to the FIRST field with an error; for radio/checkbox groups, link to the first option; if unsure which field has the error, link to the first field.
 
 ## Complex Components
 
@@ -873,6 +916,20 @@
 - Error icon — inline SVG with `fill="currentColor"` so the icon inherits the error text color and stays adaptable in Forced Colors Mode.
 - Error icon naming — give the SVG `aria-label="Error:"` so SRs announce "Error:" before the message, OR hide the SVG via `aria-hidden="true"` and add a visually-hidden "Error:" `<span>` inside the message.
 - Outro topics (next chapter) — when/how to validate (on submit vs while typing), disabling the submit button (don't), and ensuring users find every invalid field without walking through them all.
+- Submit button — do NOT disable until the form is complete; the disabled state is low-contrast, drops out of the tab order, and is invisible to SR users; a "complete the form to enable submit" note elsewhere on the page is unreliable (page-zoom users may not see it, cognitive-disability users may not understand it); even W3C design-system guidance recommends avoiding disabled buttons unless research shows they help.
+- Submission flow — let the user submit, intercept with JS, validate client-side, fall back to server-side if JS unavailable; allow resubmission/revalidation after errors are corrected.
+- On-submit error summary — render a heading + ordered list of error→link items above the form; use `role="group"` + `aria-labelledby` to give the container an accName from the heading; `tabindex="-1"` on the heading (preferred) or container so JS can `.focus()` it.
+- Error-summary focus target — prefer the heading (announces role + content); the container is also valid but NVDA reads ALL summary content when focus lands on the container, which can be overwhelming on large forms.
+- Live-region-vs-focus-move heuristic — if the dynamically added element contains interactive elements (like the summary's links), MOVE focus so users can tab to them; if it doesn't (form-level error without links), use a live region.
+- Inline error messages complement the summary — wording in the summary should match the inline messages; mark the input visually + `aria-invalid="true"`; associate via `aria-describedby` (more robust than `aria-errormessage` per Adrian Roselli).
+- Field with instructions + error — `aria-describedby="error_id instructions_id"` orders the announcement so the error comes first then the instructions.
+- Server-reload announcement — prefix the page `<title>` with "Error" (e.g., "2 Errors — Billing Address") so the first thing the SR user hears after reload is the error count; success message in `<title>` after successful submission.
+- Inline validation timings — on-keypress (while typing) OR on-blur (after moving to next field); only validate after the input has changed; different fields may need different timings.
+- Inline error live region — make each per-field error container `aria-live="assertive"` (or `role="alert"`); place it empty in the markup; populate via JS; empty before repopulating to ensure SR notification.
+- Inline validation cross-SR test results — NVDA + Firefox: on-blur error announced before next field's accName; on-keypress error announced on pause (works as expected). JAWS + Chrome: on-blur error announced twice (before AND after next field's accName); on-keypress error NOT announced until user returns to the field. VoiceOver on macOS: on-keypress error NOT announced.
+- Inline validation recommendation — prefer on-BLUR over on-keypress; even then some users may miss the message; always test in the pairings your audience uses.
+- Short-form fallback — for 1–2-field forms (login), a form-level error without per-field links is acceptable; designate the container as a live region instead of moving focus.
+- Belt-and-braces — combine inline validation with on-submit validation; the on-submit error summary is always more bullet-proof; treat inline validation as an enhancement.
 
 ## Anti-Patterns
 
@@ -1001,6 +1058,12 @@
 - Anti-pattern: Color-only invalid indication — fails SC 1.4.1; users with certain types of color blindness cannot perceive the state.
 - Anti-pattern: `aria-errormessage` without `aria-invalid="true"` — the message is not announced.
 - Anti-pattern: An `aria-errormessage`-referenced element visible to all users at all times — should be hidden from all users until `aria-invalid="true"`.
+- Anti-pattern: Disabling the Submit button until the form is completed — low-contrast disabled state, dropped from the tab order, invisible to SR users, confusing for cognitive/learning-disability users; creates a barrier to form completion.
+- Anti-pattern: Adding a "complete the form to enable submit" note elsewhere on the page — page-zoom users may not see it; cognitive/learning-disability users may not understand it; doesn't fix the underlying disabled-button problem.
+- Anti-pattern: Putting interactive elements (e.g., links inside an error summary) into a live region — users should reach them via focus-move so they can tab to the links; live regions are for non-interactive announcements.
+- Anti-pattern: Inline validation while the user is typing (on keypress) without cross-SR testing — JAWS and VoiceOver do not reliably announce keypress errors; users may not know their input is invalid.
+- Anti-pattern: Inline validation before the user has tried filling the field — fires errors prematurely while users are scanning the form's structure.
+- Anti-pattern: Relying on inline validation alone — always combine with on-submit validation; otherwise users who miss the inline messages will submit invalid data, and a disabled-submit + missed-inline combination "guarantees a 100% abandonment rate" (Vitaly Friedman).
 
 ## Decision Rules
 
@@ -1070,6 +1133,11 @@
 - Decision: `aria-describedby` vs `aria-errormessage` for error messages — `aria-describedby` has broader, more consistent cross-AT support today; `aria-errormessage` is more semantically precise but currently inconsistent (per Adrian Roselli's "Exposing Field Errors").
 - Decision: Marking required vs optional fields — mark BOTH for the lowest user-error rate; usability test for your specific form (per Baymard / Nielsen Norman group).
 - Decision: Native HTML5 constraint validation vs custom JavaScript — prefer custom JavaScript; native messages are uncustomisable, fail page zoom, and Chrome's disappear after 5 seconds.
+- Decision: Inline validation vs validation on submission — prefer on-submit as the always-reliable channel; treat inline as an enhancement; combine both when possible.
+- Decision: Move focus vs live region for newly added content — if it contains interactive elements (e.g., summary links), MOVE focus so users can tab to them; if it doesn't, use a live region.
+- Decision: Error-summary focus target — heading vs container; prefer the heading (announces role + content); the container is also valid but NVDA reads the entire summary on focus.
+- Decision: Inline validation timing — on-keypress vs on-blur; prefer on-BLUR; on-keypress is unreliably announced by JAWS and VoiceOver.
+- Decision: `aria-live` vs `role="alert"` — `role="alert"` has implicit `aria-live="assertive"` AND adds semantic "alert" meaning (some SRs announce "alert" before content); plain `aria-live="assertive"` is silent on semantics.
 
 ## Keyboard Behaviour
 
@@ -1190,6 +1258,15 @@
 - AT: `<abbr title="…">` verbose announcement — VoiceOver on macOS announces the title's value, then the inner glyph (e.g., "Star"), and exposes the `<abbr>` as a group; an even noisier alternative to a bare asterisk.
 - AT: `aria-errormessage` cross-AT inconsistency — current support is uneven across browser/SR pairings (per Adrian Roselli's "Exposing Field Errors"); test in the pairings your audience uses.
 - AT: `aria-errormessage` announcement gating — only announced when `aria-invalid="true"`; the referenced message must otherwise be hidden from all users.
+- AT: One-element focus limit — a screen reader can only focus on one element at a time; when content is dynamically added elsewhere on the page, the user is unaware unless you use a live region OR move focus to it.
+- AT: Live region announcement — when an element is `aria-live` (or has a live region role), SRs are auto-notified of content updates within it (and its children), wherever the user's focus is at the time.
+- AT: Live region roles add semantic meaning — some SRs announce the role (e.g., "alert") before the content; plain `aria-live` does not add this label.
+- AT: Focus-move announcement — when focus moves to an element, SRs announce the element's role + name; moving focus to a heading announces the heading's role + content.
+- AT: NVDA on error-summary container — reads ALL content inside the container when focus lands on it; can be overwhelming on large forms.
+- AT: NVDA + Firefox inline validation — on-blur, announces the error before the next field's accName; on-keypress, announces the error every time the user pauses typing (works as expected).
+- AT: JAWS + Chrome inline validation — on-blur, announces the error TWICE (before AND after the next field's accName); on-keypress, does NOT announce until the user navigates away from the field and back.
+- AT: VoiceOver (macOS) inline validation — does NOT announce errors added on keypress.
+- AT: Empty-then-populate live region — emptying the container before inserting new message text helps SRs reliably notice the update; recommended technique for inline error messages.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -1262,6 +1339,12 @@
 - Tool: "A Definite Guide to Sensible Form Validations" — source of the preventive-validation philosophy ("Avoid the need for throwing any error. Be preventive.").
 - Tool: Baymard Institute checkout usability study — failing to mark BOTH required and optional fields leads to unnecessary validation errors, user confusion, slower checkout, and abandonments.
 - Tool: Nielsen Norman Group required-fields article — argues marking optional fields lightens cognitive load (users don't have to infer optional vs required from surrounding context).
+- Tool: Hampus Sethfors / Axess Lab "Disabled buttons disable disabled users" — argues disabled buttons exclude many users with disabilities (low contrast, dropped from tab order, invisible to SR users).
+- Tool: W3C design system guidance on disabled buttons — "Disabled buttons can confuse some users, so avoid them if possible. Only use disabled buttons if research shows it makes the user interface easier to understand."
+- Tool: Josh Comeau on the submit event — "we know the user's intent: they think the form is good, and they're trying to submit it. It's the perfect time to tell them 'Hey, you need to do X'."
+- Tool: GOV.UK design system "Error summary" component — examples and guidance for error summary patterns including how to link to multi-part fields (date inputs, radio/checkbox groups) and how a consistent summary pattern works even for single-field forms.
+- Tool: Luke Wroblewski "Inline Validation in Web Forms" — usability research showing inline validation, used right, can increase form completion success, decrease errors, and decrease completion time; not all fields benefit from the same timing.
+- Tool: Vitaly Friedman on inline validation failure — "even the most sophisticated inline validation will be faulty at times… when it fails, it fails big time"; disabled-submit + missed-inline error "guarantees a 100% abandonment rate".
 
 ## Glossary
 
@@ -1348,4 +1431,9 @@
 - Term: Server-side validation — validation performed after data reaches the server; final check that cannot be bypassed in the browser.
 - Term: Required field — a form field the user must complete; marked programmatically via `required` or `aria-required="true"` AND visibly in text (e.g., "(Required)" in the label).
 - Term: Optional field — a form field the user is not obligated to complete; marked visibly (e.g., "(Optional)" in the label) for usability.
+- Term: Validation on form submission — validating user input after they press Submit (the JS handler may intercept the submission); error messages appear after the user's submission attempt.
+- Term: Inline validation — validation that happens while the user is going through a form, either on keypress (while typing) or on blur (after moving to the next field); shows error/success feedback at or near each field.
+- Term: Live region — an element designated as "live" via `aria-live` (or a live region role like `alert`/`status`); SRs auto-notify users when content updates within it, wherever the user's focus is at the time.
+- Term: Error summary — a heading-titled, focusable list of error→link items rendered above the form on submit; lets users quickly find and jump to invalid fields; recommended by W3C as an advisory technique for SC 3.3.1 and SC 3.3.3.
+- Term: `aria-live` values — `assertive` interrupts the user with immediate notification (typical for errors); `polite` waits for an opportune moment (typical for status updates); `off` is equivalent to removing the attribute.
 - Term: accName priority (author's recommended) — HTML content → HTML attribute/element → `aria-labelledby` → `aria-label`; almost the reverse of the formal algorithm.

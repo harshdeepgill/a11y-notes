@@ -332,6 +332,31 @@
 - Rule: Treat inline validation as an enhancement; always combine with on-submit validation as a fallback — error summaries on submit are more bullet-proof.
 - Rule: Allow resubmission and revalidation of the form after errors are fixed.
 - Rule: For multi-field group errors (per GOV.UK), link to the FIRST field with an error; for radio/checkbox groups, link to the first option; if unsure which field has the error, link to the first field.
+- Rule: Screen readers linearize web content — converting the page's 2D content into a 1D string spoken via TTS or delivered to a refreshable Braille display.
+- Rule: SR users can only move forwards or backwards through the linearized content, one item at a time — they can't perceive content updates happening elsewhere on the page.
+- Rule: To notify a SR of dynamic updates, EITHER move focus to the update OR designate the update's container as a live region — there's no third option.
+- Rule: Status messages must be programmatically determinable through role or properties so AT can present them WITHOUT moving focus (SC 4.1.3 Status Messages Level AA).
+- Rule: A "status message" per WCAG is a change in content that is NOT a change of context; change-of-context (new window, focus move, page navigation, significant rearrangement) is already surfaced by AT and is out of scope of SC 4.1.3.
+- Rule: Live regions are NOT the same as the `region` landmark — different concepts entirely.
+- Rule: Live region announcements are TRANSIENT — one-shot and gone forever; they cannot be reviewed, replayed, or revealed later (unless you offer a separate notification centre).
+- Rule: Don't use live regions in place of a more persistent approach — if you can use a persistent UI affordance, you almost definitely should.
+- Rule: A live region works even if visually-hidden, as long as it's not hidden in a way that removes it from the accessibility tree.
+- Rule: When a status message is visible to all users and the conveyed text is equivalent, designate the SAME visible element as the live region rather than mirroring to a hidden one.
+- Rule: Place the live region container in the DOM as early as possible (at load) and populate it via JavaScript when notifying — late-attached live regions may not be monitored.
+- Rule: Hide the empty live region's visual chrome with `[aria-live="…"]:not(:empty) { padding…; background…; }` so layout chrome (padding, border, background) only appears when populated.
+- Rule: A live region does not need to be initially empty — adding items to a pre-populated `<ul aria-live="polite">` triggers an announcement each time.
+- Rule: Live region configuration attributes (`aria-relevant`, `aria-atomic`, `aria-busy`) currently have inconsistent cross-AT support — don't rely on them yet (per Paul J. Adam's tests).
+- Rule: `aria-relevant` controls which DOM changes trigger an announcement — values `additions`, `removals`, `text`, or shorthand `all`; default is `additions text`.
+- Rule: `removals` and `all` for `aria-relevant` should be used sparingly — only when a removal represents an important change (e.g., a user removed from a chatroom).
+- Rule: `aria-atomic` controls what is announced — `true` = the entire region (plus accName); `false` (default) = only the changed parts; `true` is useful for "Now Playing"-style indicators where partial updates lose context.
+- Rule: `aria-busy="true"` tells SRs to ignore the element while it's undergoing changes; flip to `false` when done — queued changes on a live region announce as a single unit.
+- Rule: `aria-busy` default is `false`; can be used on any element, not just live regions.
+- Rule: `aria-busy` is currently poorly supported — most SRs except JAWS read the busy region anyway; workaround is to pair with `aria-hidden="true"` and remove when done.
+- Rule: ARIA provides FIVE live region roles — `alert`, `status`, `log`, `marquee`, `timer` — each with implicit `aria-live`/`aria-atomic` defaults.
+- Rule: `alert` and `status` are the most commonly used live region roles and have generally good support; `log`, `marquee`, `timer` have poor or no support; `marquee` and `timer` are in danger of being removed from the ARIA spec.
+- Rule: Live region roles add SEMANTIC meaning — some SRs prefix announcements with the role (e.g., "Alert: …", "Status: …"); plain `aria-live` does not add this prefix.
+- Rule: Live region roles accept an accessible name (unlike a name-prohibited `<div aria-live>`); use `aria-labelledby`/`aria-label` for context when multiple live regions coexist (e.g., "Shopping cart, 5 items").
+- Rule: `<output>` is the only native HTML live region element — implicit `status` role (polite live region), labelable via `<label>`; current cross-AT announcement is inconsistent.
 
 ## HTML Elements
 
@@ -385,7 +410,7 @@
 - Element: `<source>` — child of `<picture>`; supplies `media` and `srcset` to select the responsive image source; has no `alt` of its own.
 - Element: `<object>` — one of seven ways to embed an SVG on a page; not announced as an image by default — explicit `role="img"` is required to surface image semantics; the `alt` attribute does NOT work on `<object>` even when `role="img"` is set, so name it via `aria-labelledby` or `aria-label` and describe it via `aria-describedby`; content between the opening and closing tags serves as both a rendered fallback when the embedded resource fails to load AND as the AT-exposed extended description when referenced via `aria-describedby`.
 - Element: `<meter>` — labelable form control representing a scalar measurement within a known range; gets its accessible name natively from a properly associated `<label>`.
-- Element: `<output>` — labelable form control representing the result of a calculation or user action; gets its accessible name natively from a properly associated `<label>`.
+- Element: `<output>` — labelable form control representing the result of a calculation or user action; gets its accessible name natively from a properly associated `<label>`. Has IMPLICIT live region semantics — maps to the ARIA `status` role (polite live region) so content updates are announced by SRs as a polite live region. Currently announced inconsistently across browser/SR pairings — VoiceOver+Safari reads the content but NOT the accName; NVDA+Firefox doesn't read the accName either; VoiceOver+Chrome reads content + accName as intended (per Scott O'Hara).
 - Element: `<progress>` — labelable form control representing the completion progress of a task; gets its accessible name natively from a properly associated `<label>`.
 - Element: `<abbr>` — represents an abbreviation or acronym; the optional `title` attribute provides the expansion when none is present inline; using `<abbr class="req" title="required">*</abbr>` to mark required fields visually causes verbose VoiceOver announcements (title "Required" + inner "Star" + abbr exposed as a group).
 
@@ -424,7 +449,11 @@
 - Role: Name-prohibited roles — `caption`, `code`, `definition`, `deletion`, `emphasis`, `generic`, `insertion`, `mark`, `paragraph`, `presentation`, `strong`, `subscript`, `suggestion`, `superscript`, `term`, `time`; any element mapping (implicitly or explicitly) to one of these roles cannot have an accessible name.
 - Role: `none` — synonym of `presentation`; preferred wording because it is less likely to be misread as "hide this element"; same suppression rules and exceptions apply.
 - Role: `radiogroup` — composite widget role representing a group of radio buttons that can only have a single entry checked at any one time; supports `aria-required` but NOT the HTML `required` attribute; used to override `<fieldset>`'s implicit `group` role when the group needs to be marked required.
-- Role: `alert` — live region role representing important, usually time-sensitive information (e.g., an error message); has an implicit `aria-live="assertive"` so AT users are notified immediately when content is inserted into the element; adds explicit "alert" semantics that some SRs announce before the content.
+- Role: `alert` — live region role representing important, usually time-sensitive information (e.g., an error message); has an implicit `aria-live="assertive"` AND `aria-atomic="true"`; AT users are notified immediately when content is inserted; adds explicit "alert" semantics that some SRs announce before the content.
+- Role: `status` — live region role representing advisory information for the user that's not important enough to justify an alert (status bar, success message); has an implicit `aria-live="polite"` AND `aria-atomic="true"`; accepts an accessible name via `aria-labelledby`/`aria-label`; the native `<output>` element maps to this role.
+- Role: `log` — live region role representing a region where new information is added in meaningful order and old information may disappear (chat logs, messaging history, game log, error log); implicit `aria-live="polite"`; new info added only to the end of the log, not at arbitrary points; current cross-AT support is poor.
+- Role: `marquee` — live region role for non-essential information that changes frequently (stock tickers); implicit `aria-live="off"`; primary difference from `log` is that logs have a meaningful order; support is poor; in danger of deprecation from the ARIA spec.
+- Role: `timer` — live region role representing a numerical counter that indicates elapsed time from a start point or time remaining until an end point; implicit `aria-live="off"`; support is poor; in danger of deprecation from the ARIA spec.
 
 ## Attributes
 
@@ -480,7 +509,10 @@
 - Attribute: `step` — HTML attribute on `<input type="number">` (and similar) specifying the numerical step increment.
 - Attribute: `novalidate` — HTML boolean attribute on `<form>`; suppresses the browser's automatic form validation and default error-bubble messages so you can supply your own via JavaScript.
 - Attribute: `formnovalidate` — HTML boolean attribute on submit `<button>` or `<input type="submit">`; disables the form's automatic validation when that specific submission is used.
-- Attribute: `aria-live` — declares an element as a live region whose updates SRs should announce; accepts `assertive` (interrupts the user immediately — typical for error messages), `polite` (waits for an opportune moment), or `off` (equivalent to removing the attribute); plain `aria-live` does NOT add semantic meaning the way live region roles (`alert`, `status`) do.
+- Attribute: `aria-live` — declares an element as a live region whose updates SRs should announce. Accepts `assertive` (interrupts the user immediately — limited to critical messages: errors, session timeouts, security alerts), `polite` (waits for an opportune moment — success messages, feeds, chat logs, loading indicators), or `off` (default — updates not presented unless user is currently focused on the region; equivalent to removing the attribute). Plain `aria-live` does NOT add semantic meaning the way live region roles (`alert`, `status`) do, and a name-prohibited element (`<div>`) carrying only `aria-live` cannot have an accessible name.
+- Attribute: `aria-relevant` — declares which DOM changes inside a live region trigger an announcement; accepts a space-separated list of `additions`, `removals`, `text`, or the catch-all `all`; default is `additions text` (announce on node additions or text changes). `removals` and `all` should be used sparingly — only when a removal represents an important change (e.g., user leaving a chatroom). Current cross-AT support is inconsistent — don't rely on it yet.
+- Attribute: `aria-atomic` — controls what is included in a live region announcement; `true` = the ENTIRE region content (plus accName) is announced on any change; `false` (default) = only the changed parts. `true` is useful for "Now Playing"-style indicators where partial updates lose context. Current cross-AT support is inconsistent — don't rely on it yet.
+- Attribute: `aria-busy` — declares that an element (often a section loading content) is undergoing changes; SRs should ignore the content until `aria-busy="false"`. Default is `false`. Usable on ANY element, not just live regions. On a live region, queued changes are announced as a single unit when flipped to `false`. Currently poorly supported — most SRs except JAWS read the busy content anyway; workaround is to pair with `aria-hidden="true"` and remove when done.
 
 ## WCAG Success Criteria
 
@@ -507,6 +539,7 @@
 - WCAG: SC 3.3.3 Error Suggestion (Level AA) — "If an input error is automatically detected and suggestions for correction are known, then the suggestions are provided to the user, unless it would jeopardize the security or purpose of the content." Helps users with learning disabilities fill in forms successfully and reduces the number of times users with motion impairments need to change an input value.
 - WCAG: SC 1.4.1 Use of Color (Level A) — color must not be the only means of conveying information; for invalid-state communication, pair red styling with an icon or text so users with color blindness can still perceive the state.
 - WCAG: SC 1.4.3 Contrast (Minimum) (Level AA) — disabled controls and other "inactive user interface components" are EXEMPT from the minimum contrast requirement; the exemption is technical only — disabled controls still create real usability barriers for users with low vision, so aim for usability beyond conformance.
+- WCAG: SC 4.1.3 Status Messages (Level AA) — "In content implemented using markup languages, status messages can be programmatically determined through role or properties such that they can be presented to the user by assistive technologies without receiving focus." A status message is a change in content that is NOT a change of context, communicating success/result of an action, application waiting state, process progress, or the existence of errors. Change-of-context (new window, focus move, page navigation, significant page rearrangement) is already surfaced by AT and out of scope. Met via ARIA live regions (`aria-live` or live region roles).
 
 ## Patterns & Recipes
 
@@ -628,6 +661,12 @@
 - Pattern: Inline error live region — place an empty `<p id="email-error" aria-live="assertive">` (or `role="alert"`) in the markup; populate via JS when validation fails; empty the container BEFORE repopulating to ensure SR notification.
 - Pattern: Ordered error + instructions via `aria-describedby` — `<input … aria-describedby="error_id instructions_id">` puts the error description first in the announcement, then the instructions.
 - Pattern: Multi-field group error link (GOV.UK) — for date inputs (day/month/year), link the summary entry to the FIRST field with an error; for radio/checkbox groups, link to the first option; if unsure which field has the error, link to the first field.
+- Pattern: Make any element a live region — set `aria-live="polite"` (or `assertive`) on a `<div>`, `<ul>`, `<p>`, etc.; place the empty container in the DOM at load so it's monitored from the start; populate via JavaScript when the notification needs to fire.
+- Pattern: Hide an empty live region's visual chrome — `[aria-live="assertive"]:not(:empty) { padding: .25em 1em; background: maroon; … }` so layout chrome only applies when the region has content.
+- Pattern: Atomic live region for "Now Playing"-style indicators — `<p aria-live="polite" aria-atomic="true"><span>Now Playing:</span><span>[title]</span></p>`; updating only the title still announces the full sentence so the user gets context.
+- Pattern: Skeleton screen with `aria-busy` + separate live region — set `aria-busy="true"` on the loading section and add a separate visually-hidden `<div aria-live="polite">Loading content…</div>`; flip `aria-busy` to `false` and update the live region to "Content loaded." once content arrives. Workaround for poor `aria-busy` support: hide the busy region with `aria-hidden="true"` and remove when done (per Adrian Roselli's "More Accessible Skeletons").
+- Pattern: Named live region — give a live region role (e.g., `role="status"`) an `aria-labelledby` to a visible heading or label so the announcement includes the region's name (e.g., "Shopping cart, 5 items"); useful when multiple live regions coexist on a page.
+- Pattern: `<output>` for calculation results — `<label for="result">Your total is:</label><output id="result"> </output>`; updates to the output's content are announced as a polite live region (where AT support permits).
 
 ## Complex Components
 
@@ -931,6 +970,36 @@
 - Short-form fallback — for 1–2-field forms (login), a form-level error without per-field links is acceptable; designate the container as a live region instead of moving focus.
 - Belt-and-braces — combine inline validation with on-submit validation; the on-submit error summary is always more bullet-proof; treat inline validation as an enhancement.
 
+### Live region
+
+- Definition — an element designated "live" via `aria-live` (or a live region role) so SRs are auto-notified of content updates within it wherever the user's focus is at the time; NOT the `region` landmark; behaves like a livestream / cassette-tape analogy (per Ugi Kutluoglu).
+- Creation — three ways: the `aria-live` attribute, a live region role (`alert`, `status`, `log`, `marquee`, `timer`), or the native `<output>` element (implicit `status` role).
+- `aria-live` values — `assertive` interrupts (errors, session timeouts, security alerts); `polite` waits for an opportune moment (success, feeds, chat, loading); `off` (default) ignores updates unless focus is on the region.
+- Transient nature — announcements are one-shot and gone forever; offer a persistent alternative (e.g., a notifications centre) for users who miss them.
+- Markup-first placement — place the empty live region container in the DOM at load time; populate via JS when notifying; late-attached containers may not be monitored in time.
+- Visual handling for empty containers — `[aria-live="…"]:not(:empty) { … }` so layout chrome (padding, border, background) only applies when populated.
+- Visually-hidden vs visible — live regions work hidden as long as not removed from the accessibility tree; prefer the SAME visible element as the live region when the spoken text equals the visible text.
+- Configuration attributes — `aria-relevant` (which changes trigger an announcement: `additions`/`removals`/`text`/`all`, default `additions text`), `aria-atomic` (announce entire region vs only changed parts), `aria-busy` (suspend announcements while updating); browser/SR support is inconsistent — don't rely on these yet (per Paul J. Adam's tests).
+- `aria-live` vs live region roles — roles add explicit semantics (some SRs say "alert"/"status" before content) AND can carry an accessible name via `aria-labelledby`/`aria-label`; plain `aria-live` does neither.
+- Five roles and their implicit values — `alert` (assertive, atomic=true), `status` (polite, atomic=true), `log` (polite), `marquee` (off), `timer` (off).
+- Role support landscape — `alert` and `status` have generally good support; `log`/`marquee`/`timer` have poor or no support; `marquee` and `timer` are in danger of being deprecated from the ARIA spec.
+- Naming — provide an accessible name (e.g., `<div role="status" aria-labelledby="cart-label">` referencing a visible "Shopping Cart" label) when multiple live regions coexist or context would otherwise be lost (e.g., "Shopping cart, 5 items").
+- `<output>` — the only native HTML live region element; implicit `status` role (polite); labelable; cross-AT announcement is inconsistent today.
+
+### Toast
+
+- Definition — a message presenting timely information (action confirmations, statuses, alerts) that typically auto-expires after a few seconds; once gone, the user cannot review it.
+- Relationship to live regions — closest visual equivalent of a live region announcement; both are transient; not all toasts are good candidates for live regions (some are too low-priority or repetitive to interrupt or announce).
+- Persistence option — if you need users to be able to review past toasts, collect them in a notifications centre or similar persistent UI.
+
+### Skeleton screen
+
+- Definition — a loading indicator shown in place of a section's content while it loads; wireframe-like visual that mimics the eventual layout, helping users build a mental model of what will be on the page.
+- Loading markup — set `aria-busy="true"` on the loading `<section>` (so SRs ideally wait until content arrives) and add a separate visually-hidden polite live region with "Loading content…" so SR users get progress feedback.
+- Loaded state — flip `aria-busy="false"` AND update the live region to "Content loaded." once content has arrived.
+- `aria-busy` support gap — most SRs except JAWS read the busy region's content despite `aria-busy="true"`; a sub-optimal experience.
+- Recommended workaround — hide the busy region with `aria-hidden="true"` while loading and remove it once content is ready (per Adrian Roselli's "More Accessible Skeletons" — his solution doesn't require live regions at all).
+
 ## Anti-Patterns
 
 - Anti-pattern: Exposing a form as a landmark when the form is the page's primary content — adds unnecessary noise.
@@ -1064,6 +1133,12 @@
 - Anti-pattern: Inline validation while the user is typing (on keypress) without cross-SR testing — JAWS and VoiceOver do not reliably announce keypress errors; users may not know their input is invalid.
 - Anti-pattern: Inline validation before the user has tried filling the field — fires errors prematurely while users are scanning the form's structure.
 - Anti-pattern: Relying on inline validation alone — always combine with on-submit validation; otherwise users who miss the inline messages will submit invalid data, and a disabled-submit + missed-inline combination "guarantees a 100% abandonment rate" (Vitaly Friedman).
+- Anti-pattern: Using live regions in place of a persistent UI affordance — announcements are transient and gone forever once made; persistent approaches are almost always better when they fit.
+- Anti-pattern: Adding the live region container to the DOM only at the moment of notification — the SR may not have been monitoring it; place the empty container in the DOM at load time and populate later.
+- Anti-pattern: Over-using `aria-live="assertive"` — assertive notifications are disruptive and can disorient users or prevent task completion; reserve for critical, time-sensitive messages (errors, session timeouts, security alerts).
+- Anti-pattern: Confusing the "live region" with the `region` landmark — different concepts (live region is the notification system; the landmark is page-structural).
+- Anti-pattern: Relying on `aria-relevant`/`aria-atomic`/`aria-busy` for behaviour today — cross-AT support is inconsistent; updates may announce in ways you didn't intend.
+- Anti-pattern: `aria-live` on a name-prohibited element (`<div>`) when you need an accessible name on the live region — switch to a live region role (`role="status"`/`role="alert"`) which provides a meaningful role AND accepts an accName.
 
 ## Decision Rules
 
@@ -1138,6 +1213,10 @@
 - Decision: Error-summary focus target — heading vs container; prefer the heading (announces role + content); the container is also valid but NVDA reads the entire summary on focus.
 - Decision: Inline validation timing — on-keypress vs on-blur; prefer on-BLUR; on-keypress is unreliably announced by JAWS and VoiceOver.
 - Decision: `aria-live` vs `role="alert"` — `role="alert"` has implicit `aria-live="assertive"` AND adds semantic "alert" meaning (some SRs announce "alert" before content); plain `aria-live="assertive"` is silent on semantics.
+- Decision: `aria-live` vs live region roles (general) — prefer a role (`alert`, `status`) when you want explicit semantics announced AND the ability to give the region an accessible name (e.g., "Shopping cart"); use `aria-live` when keeping the element's existing implicit semantics matters (e.g., a `<ul>` whose new items should still be a list).
+- Decision: Live region vs persistent UI — prefer persistent whenever you can; live region announcements are transient and gone forever once made.
+- Decision: Skeleton-screen `aria-busy` vs `aria-hidden` workaround — `aria-hidden="true"` is currently more reliable than `aria-busy="true"` across SRs; fall back to the `aria-hidden` workaround until support improves.
+- Decision: `<output>` vs custom live region — `<output>` is native and labelable but has inconsistent cross-AT announcement; use it where calculation/result semantics fit, but verify in your audience's pairings.
 
 ## Keyboard Behaviour
 
@@ -1267,6 +1346,13 @@
 - AT: JAWS + Chrome inline validation — on-blur, announces the error TWICE (before AND after the next field's accName); on-keypress, does NOT announce until the user navigates away from the field and back.
 - AT: VoiceOver (macOS) inline validation — does NOT announce errors added on keypress.
 - AT: Empty-then-populate live region — emptying the container before inserting new message text helps SRs reliably notice the update; recommended technique for inline error messages.
+- AT: Linearization — SRs convert 2D page content into a 1D string; users move forwards/backwards one item at a time, like a cassette tape (per Ugi Kutluoglu).
+- AT: Live region monitoring — SRs are notified of updates within an element designated "live" wherever the user's focus is at the time; updates are announced once (transient).
+- AT: Late-attached live regions may not be monitored — placing the empty container in the DOM early at load is the recommended best practice.
+- AT: Live region role prefix announcement — some SRs prefix the message with the role ("Alert: …", "Status: …") when a live region role is used; plain `aria-live` does not add this prefix.
+- AT: `aria-busy` support — most SRs (except JAWS) ignore the suspension and read the busy region's content anyway, producing a sub-optimal experience.
+- AT: `<output>` cross-AT — VoiceOver+Safari reads the output's content but NOT its accName; NVDA+Firefox doesn't read the accName either; VoiceOver+Chrome reads both as intended.
+- AT: VoiceOver+Safari `<output>` quirk — announces the INITIAL total value before announcing the updated total every time it makes an announcement.
 
 ### Content hiding techniques and their accessibility implications
 
@@ -1345,6 +1431,10 @@
 - Tool: GOV.UK design system "Error summary" component — examples and guidance for error summary patterns including how to link to multi-part fields (date inputs, radio/checkbox groups) and how a consistent summary pattern works even for single-field forms.
 - Tool: Luke Wroblewski "Inline Validation in Web Forms" — usability research showing inline validation, used right, can increase form completion success, decrease errors, and decrease completion time; not all fields benefit from the same timing.
 - Tool: Vitaly Friedman on inline validation failure — "even the most sophisticated inline validation will be faulty at times… when it fails, it fails big time"; disabled-submit + missed-inline error "guarantees a 100% abandonment rate".
+- Tool: Paul J. Adam's `aria-atomic` / `aria-relevant` test page — documents cross-platform/SR support gaps for the live region configuration attributes.
+- Tool: Adrian Roselli's "More Accessible Skeletons" — accessible skeleton screen solution with a live demo; provides an approach that doesn't require live regions at all.
+- Tool: Scott O'Hara's article on the `<output>` element — details current support state, quirks, and workarounds for `<output>`'s announcement inconsistencies.
+- Tool: Ugi Kutluoglu's SR analogies — "cassette tape" (rewind/forward/play SR navigation) and "livestream" (live region announcement) — useful mental models for explaining SR behaviour.
 
 ## Glossary
 
@@ -1436,4 +1526,10 @@
 - Term: Live region — an element designated as "live" via `aria-live` (or a live region role like `alert`/`status`); SRs auto-notify users when content updates within it, wherever the user's focus is at the time.
 - Term: Error summary — a heading-titled, focusable list of error→link items rendered above the form on submit; lets users quickly find and jump to invalid fields; recommended by W3C as an advisory technique for SC 3.3.1 and SC 3.3.3.
 - Term: `aria-live` values — `assertive` interrupts the user with immediate notification (typical for errors); `polite` waits for an opportune moment (typical for status updates); `off` is equivalent to removing the attribute.
+- Term: Linearization — converting a page's two-dimensional content into a one-dimensional string that screen readers present to the user one item at a time.
+- Term: Status message (WCAG 4.1.3) — a change in content that is NOT a change of context and that provides information to the user on the success or results of an action, the waiting state of an application, the progress of a process, or the existence of errors.
+- Term: Change of context — opening a new window, moving focus to a different component, going to a new page (including anything that would look to a user as if they had moved to a new page), or significantly re-arranging the content of a page.
+- Term: Toast — a message presenting timely information (action confirmations, statuses, alerts) that typically auto-expires after a few seconds; closest visual equivalent of a live region announcement; the user cannot review it once it disappears.
+- Term: Skeleton screen — a loading indicator shown in place of a section's content while it loads; provides a wireframe-like visual that mimics the eventual layout, helping users build a mental model of what will be on the page.
+- Term: Live region roles (5) — `alert`, `status`, `log`, `marquee`, `timer`; each has implicit `aria-live` and `aria-atomic` defaults; `alert`/`status` have generally good support; `log`/`marquee`/`timer` are poorly supported and the latter two are in danger of deprecation.
 - Term: accName priority (author's recommended) — HTML content → HTML attribute/element → `aria-labelledby` → `aria-label`; almost the reverse of the formal algorithm.

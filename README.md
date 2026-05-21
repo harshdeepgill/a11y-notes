@@ -404,6 +404,19 @@
 - Rule: Prefer the `outline` property over `border` for focus indicators — outlines don't participate in the box model, so they cause no layout shifts; outlines are also retained in Forced Colors modes where backgrounds, borders, and box-shadows get overridden by system colors.
 - Rule: Use `:focus-visible` (not `:focus`) for custom focus styles so the indicator only appears for keyboard users — modern browsers do this automatically for their default indicators, and users dislike outlines on click/tap.
 - Rule: For backwards compatibility with browsers that don't support `:focus-visible`, layer `:focus` + `button:focus:not(:focus-visible) { /* undo */ }` + optional stronger `:focus-visible` styles (per Patrick Lauke) — browsers that don't understand `:focus-visible` ignore the entire `:not(:focus-visible)` block.
+- Rule: Provide at least one main skip link on every site — it lets keyboard, switch, mouth-stick, and head-wand users bypass repeated content (banner, nav, search, logos) and jump straight to the main content; one way to conform with SC 2.4.1 Bypass Blocks.
+- Rule: The main skip link MUST be the first focusable element on the page so it's the first thing keyboard users reach and the first thing SR users hear; ideally make it the first child of `<body>`.
+- Rule: The skip link target is the main region of the page — give the `<main>` (or the page's `<h1>`) a unique `id` and point the skip link's `href` to it.
+- Rule: When hidden, the skip link MUST remain accessible by keyboard — `display: none` and `visibility: hidden` remove it from the accessibility tree AND the tab order, so it stops working entirely (defeats the purpose).
+- Rule: Hide a skip link visually via the `visually-hidden` utility class OR by positioning it off-screen (e.g., `position: absolute; top: -30em`) — both keep it accessible to keyboard users.
+- Rule: When the skip link receives keyboard focus it MUST become clearly visible — otherwise risks SC 2.4.11 / SC 2.4.12 Focus Not Obscured; reveal via `:focus` or `:focus-visible`.
+- Rule: For a `visually-hidden` skip link, also add focus-specific styles that absolutely-position it on top of content (e.g., `position: absolute; top: 1rem; left: 1rem; z-index: 2;`) so revealing it doesn't push the rest of the page down (no reflow / page-jump on focus).
+- Rule: Verify the skip link's target exists and that its `id` matches the `href` value — per WebAIM 2023, 1 in 6 skip links is broken because the target is missing or the link is hidden inaccessibly.
+- Rule: Make non-interactive skip-link targets focusable by adding `tabindex="-1"` (e.g., `<main id="main" tabindex="-1">`) — older browsers (IE11) won't move focus to a non-focusable target, so tabbing after activation skips back to the start.
+- Rule: Skip-link text must describe its destination so the purpose is clear from the link text alone (per SC 2.4.4 / SC 2.4.9 Link Purpose) — "Skip to main content" is the canonical wording; "Skip to content" and "Skip navigation" also work.
+- Rule: Pick skip-link wording carefully for non-native-English-speaker clarity — usability test the label with real users, not just the behaviour.
+- Rule: Provide multiple skip links only when usability testing supports it — large reference sites (e.g., MDN provides three) can benefit, but extra skip links add clutter and risk creating the very problem skip links were meant to solve ("at what point do you need a 'Skip the skip links' link?").
+- Rule: Consider in-page skip links to bypass long blocks of content too — Tables of Contents, "Skip iframe content" before an `<iframe>`, "Skip product listing" sections (IKEA pattern), and "Back to top" links at the end of long pages all count as skip-link variants.
 - Rule: Multiple live regions on a page can interfere; per ARIA spec, when an assertive change occurs the user agent MAY clear queued polite changes — some messages get lost or partially announced.
 - Rule: Pre-compose the live region message and insert it in ONE DOM operation — multiple insertions can produce multiple separate announcements.
 - Rule: Keep live region messages short and succinct; avoid rich content, interactive elements, and non-text elements (images) — they're not conveyed to SR users.
@@ -578,7 +591,9 @@
 - WCAG: SC 1.3.1 Info and Relationships — "Information, structure, and relationships conveyed through presentation can be programmatically determined or are available in text." Using the appropriate semantic elements to identify key areas of the page is required to meet this criterion.
 - WCAG: SC 2.1.1 Keyboard (Level A) — "All functionality of the content is operable through a keyboard interface without requiring specific timings for individual keystrokes, except where the underlying function requires input that depends on the path of the user's movement and not just the endpoints." The baseline keyboard-accessibility requirement for any interactive component, including custom ARIA widgets.
 - WCAG: SC 2.1.3 Keyboard (No Exception) (Level AAA) — "All functionality of the content is operable through a keyboard interface without requiring specific timings for individual keystrokes." The stricter, no-exception version of SC 2.1.1.
-- WCAG: SC 2.4.1 Bypass Blocks — exists to ensure assistive technology users have a way to bypass repeated content and facilitate page navigation; using proper landmark elements is one way to meet this criterion.
+- WCAG: SC 2.4.1 Bypass Blocks (Level A) — "A mechanism is available to bypass blocks of content that are repeated on multiple webpages." Exists to ensure AT and keyboard users have a way to bypass repeated content (banner, navigation, search, etc.) and facilitate page navigation; landmark elements satisfy this for AT users, and a skip link satisfies it for keyboard users.
+- WCAG: SC 2.4.4 Link Purpose (In Context) (Level A) — "The purpose of each link can be determined from the link text alone or from the link text together with its programmatically determined link context, except where the purpose of the link would be ambiguous to users in general." Skip-link text must communicate where the user lands when they activate it.
+- WCAG: SC 2.4.9 Link Purpose (Link Only) (Level AAA) — "A mechanism is available to allow the purpose of each link to be identified from link text alone, except where the purpose of the link would be ambiguous to users in general." Stricter version of SC 2.4.4 — the link text alone (with no surrounding context) must make the link's purpose clear.
 - WCAG: SC 4.1.2 Name, Role, Value (Level A) — "For all user interface components (including but not limited to: form elements, links and components generated by scripts), the name and role can be programmatically determined;" — referenced as being violated when an ARIA role conflicts with the nature of the element it is applied to (e.g., `role="heading"` on a `<button>`), because the semantic mismatch may prevent users from interacting with the element as announced.
 - WCAG: SC 2.5.3 Label in Name — "For user interface components with labels that include text or images of text, the name contains the text that is presented visually." When the visible label and accessible name don't match, the name must contain the label so speech-control users and others relying on the visible text can activate the control. Best practice per the Understanding page: "the text of the label [should be] at the start of the name" — Dragon and some other voice software use heuristics that match elements whose accName STARTS WITH the spoken term. Risks: (1) CSS-generated content (with alt-text) placed at the start of an element's content can cause a violation if CSS fails to load; (2) `value` and `aria-label`/`aria-labelledby` mismatch on `<input type="submit | button | reset">` (the visible `value` text is no longer contained in the accName); (3) naming a `<button>` via a `<label for>` whose text doesn't match the button's visible label; (4) inserting visually-hidden disambiguation text into the MIDDLE of a control's label breaks voice-control matching.
 - WCAG: SC 3.2.4 Consistent Identification (Level AA) — "Components that have the same functionality within a set of Web pages are identified consistently." Two or more components with the same functionality must share the same accessible name; giving same-function components different accNames is a typical failure mode.
@@ -746,6 +761,12 @@
 - Pattern: Spot-check a gradient focus indicator — sample multiple points inside the gradient with a contrast tool; sum the area where the sampled contrast is ≥3:1; ensure that area is at least twice the component's perimeter to meet Focus Appearance.
 - Pattern: Perimeter calculation — for a rectangle of width w and height h, the 2px thick perimeter ≈ `4w + 4h` square pixels (simplified, ignoring shared corner pixels); for a circle of radius r, `4πr`.
 - Pattern: Background-color-change focus indicator — flip the component's background color on focus (e.g., blue → black); the entire button background becomes the contrasting area; ensure ≥3:1 between unfocused and focused colors so it doesn't also fail SC 1.4.1 Use of Color.
+- Pattern: Main "Skip to main content" skip link — place an `<a href="#main" id="skip-link">Skip to main content</a>` as the FIRST CHILD of `<body>`; give `<main id="main" tabindex="-1">` (or the page's `<h1>`) a matching `id`; hide the link via the `visually-hidden` utility class or by off-screen positioning; reveal on `:focus` / `:focus-visible` with a clearly-visible style.
+- Pattern: Off-screen skip-link hide — `#skip-link { position: absolute; top: -30em; }` to move the link out of the viewport while keeping it focusable; `#skip-link:focus-visible { top: 0; z-index: 10; /* … */ }` to bring it back into view when focused.
+- Pattern: visually-hidden skip link without page reflow — apply the `visually-hidden` class to the skip link, then add `#skip-link.visually-hidden:focus { position: absolute; top: 1rem; left: 1rem; z-index: 2; }` so the link, when revealed, overlays the page instead of pushing content down.
+- Pattern: Skip-to-iframe-content skip link — render `<a href="#iframe-skip">Skip iframe content</a>` immediately before an `<iframe>`, then `<section id="iframe-skip" tabindex="-1">` after the iframe; lets keyboard users bypass the iframe's embedded controls.
+- Pattern: Skip-list section skip link (IKEA pattern) — before each long product listing or repeated block, render a visually-hidden skip link that points to the next section, revealed on focus; lets users bypass content categories they don't care about.
+- Pattern: Back-to-top skip link — at the end of long pages, provide a link to `#top` (or the page's first focusable region) so keyboard users don't have to tab through the entire footer to get back to the top.
 
 ## Complex Components
 
@@ -969,6 +990,25 @@
 
 - ARIA category — modal dialogs fall under the "Window roles" category of ARIA roles, which describe windows within the browser.
 - Native gaps — like drop-down navigations, dialogs built on `<details>` lack Esc-to-close and other expected behaviours; JavaScript must supply them, which is one reason to prefer custom ARIA dialogs over `<details>`.
+
+### Skip link
+
+- Definition — a link that allows users to bypass (skip) sections or blocks of content on a page and jump straight to other sections; the main one typically lives at the top of the page and jumps to the main content area.
+- Purpose — reduces the number of tab stops keyboard users (and switch-control, mouth-stick, head-wand, voice-control users) need to traverse before reaching the main content; without it, pages with many focusable elements in the header (MDN counted 75) are exhausting and physically painful for some users to navigate.
+- Beneficiaries — users with motor impairments (switches, mouth sticks, head wands), users with vision impairments using a keyboard + screen magnification or screen reader; per WebAIM's screen-reader user survey, 30%+ of respondents use a skip link always or often when present.
+- WCAG — providing a skip link is one way to meet SC 2.4.1 Bypass Blocks (Level A); the link's text must satisfy SC 2.4.4 Link Purpose (In Context) (A) and ideally SC 2.4.9 Link Purpose (Link Only) (AAA); when revealed on focus it must remain not-obscured (SC 2.4.11 / 2.4.12).
+- Position — MUST be the first focusable element on the page; ideally the first child of `<body>`; this ensures keyboard users land on it first and SR users hear it early.
+- Markup — `<a href="#main" id="skip-link">Skip to main content</a>` with target `<main id="main" tabindex="-1">`; pointing to the page's `<h1>` is also acceptable.
+- Target focusability — set `tabindex="-1"` on the target (`<main>` or `<h1>`) so older browsers (notably IE11) actually move keyboard focus into the region; without it, focus may scroll but not move, and Tab after activation resumes from the start of the page.
+- Hide technique — never use `display: none` or `visibility: hidden` (kills the link entirely); use the `visually-hidden` utility class OR off-screen positioning (`position: absolute; top: -30em`).
+- Reveal on focus — when the link receives keyboard focus, make it clearly visible via `:focus` or `:focus-visible` (otherwise risks SC 2.4.11 / 2.4.12); the `visually-hidden:not(:focus):not(:active)` selector handles this automatically when using the utility class.
+- Avoid page-reflow on reveal — a `visually-hidden` skip link, when un-hidden, takes its natural place in flow and pushes content down; add focus-specific absolute-position styles so the link overlays instead of shifting layout.
+- Off-screen vs visually-hidden trade-off — off-screen positioning is already absolute, so no reflow when shown; `visually-hidden` is general-purpose but needs the absolute-position-on-focus override to avoid page-jump.
+- Link text — "Skip to main content" is canonical; "Skip to content" and "Skip navigation" also work; usability test the wording (especially for non-native-English-speaker clarity).
+- Multiple skip links — appropriate only when usability testing supports it; MDN provides three (main content, site search, language chooser); too many add clutter and undermine the original benefit.
+- In-page variants — Tables of Contents, "Skip iframe content" links before `<iframe>`s, "Skip product listing" links between product categories (IKEA pattern), and "Back to top" links at the end of long pages all count as skip-link patterns.
+- Broken-link rate — per WebAIM 2023, 17.2% of homepages had a skip link, but 1 in 6 was broken (hidden inaccessibly or pointing to a target that doesn't exist); audit your own to avoid this.
+- Audit signal — a working skip link is one of the first things accessibility professionals look for when keyboard-testing a site.
 
 ### Tabs
 
@@ -1310,6 +1350,13 @@
 - Anti-pattern: A focus color-change that's less than 3:1 between unfocused and focused — fails BOTH SC 2.4.13 (focused/unfocused contrast) AND SC 1.4.1 Use of Color (the state change isn't perceivable without color).
 - Anti-pattern: Letting modals, fly-outs, or fixed headers cover the focused element — fails SC 2.4.11 (entirely hidden) or SC 2.4.12 (any part hidden); tab through the page and check.
 - Anti-pattern: Allowing intentionally hidden elements to receive focus — focus lands on "nothing"; verify by tabbing.
+- Anti-pattern: Skip link hidden with `display: none` or `visibility: hidden` — also removes it from the accessibility tree and tab order; per WebAIM 2023, this is one of the two main reasons 1 in 6 skip links are broken in the wild.
+- Anti-pattern: Skip link whose target is missing or whose `id` doesn't match the `href` — the link "works" but goes nowhere; the second main reason 1 in 6 skip links are broken (per WebAIM 2023).
+- Anti-pattern: Skip link target without `tabindex="-1"` on a non-focusable element (e.g., `<main>`) — older browsers don't move focus into the region, so Tab after activation jumps back to the start of the page.
+- Anti-pattern: Skip link not the first focusable element on the page — keyboard users hit other elements first, partially defeating the purpose.
+- Anti-pattern: A `visually-hidden` skip link without a focus-style override that absolutely-positions it — un-hiding the link on focus pushes the rest of the page down and causes a jarring layout jump.
+- Anti-pattern: Ambiguous skip-link wording (e.g., "Skip", "Go") — users (especially non-native English speakers) can't tell where activating the link will take them; fails SC 2.4.4 / SC 2.4.9 Link Purpose.
+- Anti-pattern: Loading the page with too many skip links — re-creates the very tab-stop fatigue that skip links were meant to solve; only add multiple skip links when usability testing supports it.
 
 ## Decision Rules
 
@@ -1404,6 +1451,10 @@
 - Decision: Two-color focus outline vs single-color — use two colors (e.g., black + white) when components vary in background brightness across the site; ensures contrast against any background without per-component overrides.
 - Decision: Two-outline order (black-then-white vs white-then-black) — flip based on the dominant component colors; for predominantly dark components, put white closer to the component for higher contrast against it.
 - Decision: SC 2.4.11 (AA) vs SC 2.4.12 (AAA) for obscuring focus — even when aiming for AA only, prefer the AAA-level "no part obscured" because it's a small extra effort with big usability gains.
+- Decision: Skip link visibility — by default it can be visible or hidden; a hidden-by-default skip link (revealed on focus) keeps the visual flow intact and is the common practice; visible-by-default is acceptable too but designers usually find it aesthetically intrusive.
+- Decision: Skip-link hide technique — `visually-hidden` (general purpose) vs off-screen positioning (already absolute, no reflow when shown); pick off-screen if you want simpler focus-on styles, pick `visually-hidden` for consistency with other hidden text but add focus-on absolute-positioning to avoid reflow.
+- Decision: Skip-link target — `<main>` element vs the page's `<h1>` — both work; `<main>` is the conventional choice; either way, give the target `tabindex="-1"` for older-browser compatibility.
+- Decision: One vs multiple skip links — one (to main content) is mandatory; add more only when usability testing shows they help (e.g., MDN's three: main content, search, language chooser); don't go overboard or you'll need a "Skip the skip links" link.
 
 ## Keyboard Behaviour
 
@@ -1640,6 +1691,11 @@
 - Tool: Erik Kroes' "Oreo-focus" indicator concept — designer-coined name for a black-white-black focus outline (two black outlines around a white middle); maximally visible across any palette.
 - Tool: Patrick Lauke's article on `:focus-visible` and backwards compatibility — demonstrates the `:focus` + `:focus:not(:focus-visible)` undo + optional stronger `:focus-visible` recipe; works in browsers that don't recognise `:focus-visible` because `:not()` containing an unsupported pseudo-class makes the whole rule ignored.
 - Tool: Laura Carvajal "You wouldn't steal their cursor" (Fronteers 2018) — talk highlighting that hiding the focus indicator is equivalent to stealing the keyboard user's mouse cursor.
+- Tool: Todd Stabelfeldt's Apple WWDC 2017 keynote — demonstrates a quadriplegic user navigating an iPhone via an external switch on his wheelchair; powerful reference for why skip links matter for switch-control users.
+- Tool: WebAIM 2023 One Million survey (skip-link stat) — 17.2% of homepages had a skip link, but 1 in 6 were broken (hidden inaccessibly or the target was missing); use as motivation to audit skip links across your sites.
+- Tool: WebAIM screen-reader user survey (skip-link stat) — 30%+ of respondents say they use a skip link always or often when present; concrete evidence that skip links serve real users.
+- Tool: MDN website skip-link reference — implements three skip links (main content, site search, language chooser); useful real-world example of multi-skip-link UX.
+- Tool: IKEA website in-page skip links — visually-hidden links revealed on focus that let keyboard users bypass long product listings; useful real-world example of section-level skip links.
 - Tool: APG `alertdialog` page — full semantic and keyboard interaction requirements for accessible alert dialogs.
 - Tool: APG Modal Dialog example — keyboard focus management requirements for modal dialogs (referenced when implementing alertdialog or interactive status notifications).
 
@@ -1751,3 +1807,6 @@
 - Term: Bound vs surround (focus indicator) — "bound" means the indicator forms a rectangle enclosing the component (e.g., a solid outline); "surround" means the indicator follows the component's actual shape (e.g., a star-shaped outline around a star).
 - Term: Universal focus indicator — a two-color (typically black + white) outline that meets ≥3:1 contrast against any page background; usable as a default focus style across an entire site.
 - Term: Oreo-focus indicator — Erik Kroes' name for a black-white-black focus outline (two black outlines around a white middle); maximally visible across light, dark, and patterned backgrounds.
+- Term: Skip link — a link that allows users to bypass (skip) sections or blocks of content on a page and jump straight to other sections; the canonical version is a "Skip to main content" link at the top of the page.
+- Term: Back-to-top link — a form of skip link, typically at the end of long pages, that lets users return to the top without having to tab back through the footer.
+- Term: In-page skip link — any skip link that jumps to a specific section of the same page (e.g., Tables of Contents items, "Skip iframe content" links, "Skip product listing" links).

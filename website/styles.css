@@ -1,0 +1,293 @@
+/* ---------------------------------------------------------------
+   UI/UX Design Considerations — stylesheet
+   Built to follow the accessibility practices it documents:
+   visible focus, color-independent cues, dark mode, zoom-friendly.
+----------------------------------------------------------------- */
+
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --text: #1a1d24;
+  --text-muted: #4a5260;
+  --accent: #005fcc;
+  --accent-contrast: #ffffff;
+  --border: #d4d9e0;
+  --sc-bg: #e8eef9;
+  --sc-text: #1f3a66;
+  --shadow: 0 1px 3px rgba(20, 25, 40, 0.08), 0 4px 16px rgba(20, 25, 40, 0.06);
+  --radius: 12px;
+  --maxw: 1100px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1117;
+    --surface: #161b22;
+    --text: #e6edf3;
+    --text-muted: #9aa6b2;
+    --accent: #58a6ff;
+    --accent-contrast: #0e1117;
+    --border: #2a313c;
+    --sc-bg: #1c2740;
+    --sc-text: #aacbff;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 1.5rem;
+}
+
+body {
+  margin: 0;
+  font-family: "Atkinson Hyperlegible", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 2.5rem);
+}
+
+/* --- Skip link --------------------------------------------------- */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100%;
+  z-index: 999;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 8px 8px;
+  text-decoration: none;
+  font-weight: 700;
+}
+.skip-link:focus {
+  top: 0;
+}
+
+/* --- Header ------------------------------------------------------ */
+.site-header {
+  background: linear-gradient(135deg, var(--accent), #003b8e);
+  color: #fff;
+  padding-block: clamp(2.5rem, 6vw, 4.5rem);
+}
+.eyebrow {
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+.site-header h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.lede {
+  margin: 0;
+  max-width: 60ch;
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  color: rgba(255, 255, 255, 0.92);
+}
+.lede strong {
+  color: #fff;
+}
+
+/* --- Layout: TOC + main ----------------------------------------- */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  padding-block: clamp(2rem, 5vw, 3.5rem);
+}
+
+@media (min-width: 60rem) {
+  .layout {
+    grid-template-columns: 240px 1fr;
+    align-items: start;
+  }
+}
+
+/* --- Table of contents ------------------------------------------ */
+.toc {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.25rem 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+@media (min-width: 60rem) {
+  .toc {
+    position: sticky;
+    top: 1.5rem;
+  }
+}
+
+.toc__title {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.toc a {
+  display: block;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.95rem;
+  border-left: 3px solid transparent;
+}
+.toc a:hover {
+  background: var(--sc-bg);
+}
+.toc a:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- Cards ------------------------------------------------------- */
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+main:focus {
+  outline: none;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: clamp(1.25rem, 3vw, 2rem);
+  box-shadow: var(--shadow);
+}
+.card--accent {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+
+.card h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  font-size: clamp(1.3rem, 3vw, 1.6rem);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.card__num {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* --- Checklists -------------------------------------------------- */
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.checklist li {
+  position: relative;
+  padding-left: 1.9rem;
+  color: var(--text-muted);
+}
+/* Non-color cue: a checkmark, not just a color */
+.checklist li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0.05em;
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: var(--sc-bg);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.checklist strong,
+.checklist em {
+  color: var(--text);
+}
+
+/* --- Success-criterion tags ------------------------------------- */
+.sc {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--sc-bg);
+  color: var(--sc-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* --- Footer ------------------------------------------------------ */
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding-block: 2rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+.site-footer p {
+  margin: 0;
+}
+.site-footer strong {
+  color: var(--text);
+}
+
+/* --- Respect reduced-motion ------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

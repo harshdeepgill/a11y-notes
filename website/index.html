@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI/UX Design Considerations — Accessibility from a Designer's Perspective</title>
+  <meta name="description" content="A designer-focused checklist of accessibility considerations for building the UI/UX of websites and components.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <p class="eyebrow">Practical Accessibility</p>
+      <h1>UI/UX Design Considerations</h1>
+      <p class="lede">
+        A designer's-perspective checklist for the UI/UX of websites and components.
+        The overarching rule: <strong>never rely on a single sense or cue</strong> &mdash; pair
+        color with text, text with icons, motion with static fallbacks.
+      </p>
+    </div>
+  </header>
+
+  <div class="layout wrap">
+    <!-- Table of contents -->
+    <nav class="toc" aria-labelledby="toc-heading">
+      <h2 id="toc-heading" class="toc__title">On this page</h2>
+      <ul>
+        <li><a href="#color">Color &amp; Contrast</a></li>
+        <li><a href="#focus">Focus &amp; Keyboard</a></li>
+        <li><a href="#typography">Typography &amp; Text</a></li>
+        <li><a href="#structure">Headings &amp; Structure</a></li>
+        <li><a href="#forms">Forms</a></li>
+        <li><a href="#labels">Labels &amp; Repeated Controls</a></li>
+        <li><a href="#motion">Motion &amp; Cognition</a></li>
+        <li><a href="#feedback">Feedback &amp; Notifications</a></li>
+        <li><a href="#navigation">Navigation &amp; Orientation</a></li>
+        <li><a href="#touch">Touch &amp; Mobile</a></li>
+        <li><a href="#mindset">The Mindset</a></li>
+      </ul>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <section class="card" id="color" aria-labelledby="color-h">
+        <h2 id="color-h"><span class="card__num" aria-hidden="true">01</span> Color &amp; Contrast</h2>
+        <ul class="checklist">
+          <li><strong>Color must never be the only visual cue.</strong> Anything shown by color (errors, required fields, selected states, links, chart segments) needs a second indicator &mdash; text, icon, underline, pattern, or shape. <span class="sc">SC 1.4.1</span></li>
+          <li><strong>Text contrast</strong> must be at least <strong>4.5:1</strong> against its background (3:1 for large text). <span class="sc">SC 1.4.3</span></li>
+          <li><strong>Non-text contrast</strong> &mdash; buttons, form borders, icons, UI boundaries &mdash; must be at least <strong>3:1</strong>. <span class="sc">SC 1.4.11</span></li>
+          <li>Design for <strong>Forced Colors / High Contrast Mode</strong>: use borders (not just background fills) for boundaries, since backgrounds and background-image icons can disappear.</li>
+        </ul>
+      </section>
+
+      <section class="card" id="focus" aria-labelledby="focus-h">
+        <h2 id="focus-h"><span class="card__num" aria-hidden="true">02</span> Focus &amp; Keyboard Experience</h2>
+        <ul class="checklist">
+          <li><strong>Every interactive element needs a clearly visible focus indicator</strong> &mdash; it's the keyboard user's cursor. Design it intentionally; don't remove it.</li>
+          <li>Focus indicators should <strong>enclose the element</strong>, be thick enough to notice, and have <strong>3:1 contrast</strong> against both the element and its surroundings. A "halo" (light gap + colored ring) works on any background. <span class="sc">SC 2.4.7, 2.4.11</span></li>
+          <li>Design with a logical <strong>reading / tab order</strong> in mind &mdash; visual layout should match the order people move through content.</li>
+        </ul>
+      </section>
+
+      <section class="card" id="typography" aria-labelledby="typography-h">
+        <h2 id="typography-h"><span class="card__num" aria-hidden="true">03</span> Typography &amp; Text</h2>
+        <ul class="checklist">
+          <li><strong>Use real text, not images of text.</strong> Images of text don't scale, recolor, or translate. <span class="sc">SC 1.4.5</span></li>
+          <li>Layouts must <strong>survive 200% zoom / text resize</strong> without losing content or breaking. <span class="sc">SC 1.4.4</span></li>
+          <li>Choose <strong>highly legible fonts</strong> (e.g. Atkinson Hyperlegible, built for character recognition).</li>
+        </ul>
+      </section>
+
+      <section class="card" id="structure" aria-labelledby="structure-h">
+        <h2 id="structure-h"><span class="card__num" aria-hidden="true">04</span> Headings &amp; Structure</h2>
+        <ul class="checklist">
+          <li><strong>If it looks like a heading, it must be a heading</strong> &mdash; and visual size should reflect true hierarchy.</li>
+          <li><strong>Don't skip heading levels</strong> for styling reasons; visual and semantic hierarchy must align.</li>
+          <li>Design clear <strong>landmark regions</strong> (header, nav, main, footer, sidebar) so users can orient and navigate. Keep them few and purposeful.</li>
+        </ul>
+      </section>
+
+      <section class="card" id="forms" aria-labelledby="forms-h">
+        <h2 id="forms-h"><span class="card__num" aria-hidden="true">05</span> Forms</h2>
+        <ul class="checklist">
+          <li><strong>Labels must be visible and persistent</strong> &mdash; never use placeholder text as the label (it disappears, has low contrast, and confuses users). <span class="sc">SC 3.3.2</span></li>
+          <li><strong>Indicate required fields with more than an asterisk or color</strong> &mdash; pair it with text like "(required)", or, if you do use an asterisk, state up front (e.g. at the top of the form) that "Fields marked with * are required."</li>
+          <li><strong>Group related fields</strong> visually and semantically (address blocks, radio sets) with a group heading / legend.</li>
+          <li><strong>Error messages must be specific and suggest a fix</strong> &mdash; "Enter a date as MM/DD/YYYY," not just "Invalid." <span class="sc">SC 3.3.1, 3.3.3</span></li>
+          <li><strong>Collect all errors in one summary at the top.</strong> When a submitted form has errors, show a single container that lists every error &mdash; each item linking to the field it refers to &mdash; and move focus to it, instead of making people hunt for scattered inline messages. <span class="sc">SC 3.3.1</span></li>
+          <li>Don't validate too aggressively (avoid erroring the moment someone leaves a field); give people a chance to finish.</li>
+          <li>For important / legal / financial actions, allow <strong>review, confirm, or undo</strong>. <span class="sc">SC 3.3.4</span></li>
+        </ul>
+      </section>
+
+      <section class="card" id="labels" aria-labelledby="labels-h">
+        <h2 id="labels-h"><span class="card__num" aria-hidden="true">06</span> Labels, Naming &amp; Repeated Controls</h2>
+        <ul class="checklist">
+          <li><strong>The visible label must match the accessible name</strong> &mdash; voice-control users speak what they see. Avoid a button that reads "Search" but is named "Submit query." <span class="sc">SC 2.5.3</span></li>
+          <li><strong>Make repeated controls distinguishable.</strong> A page of identical "Read more" / "Add to cart" buttons is confusing &mdash; add context ("Read more about [Article Title]").</li>
+          <li><strong>Icon-only buttons need a text label</strong> (visible or accessible) &mdash; an icon alone isn't enough.</li>
+        </ul>
+      </section>
+
+      <section class="card" id="motion" aria-labelledby="motion-h">
+        <h2 id="motion-h"><span class="card__num" aria-hidden="true">07</span> Motion, Cognition &amp; Inclusive Patterns</h2>
+        <ul class="checklist">
+          <li><strong>Design safer animation</strong> for motion-sensitive users; respect reduced-motion preferences and avoid excessive auto-movement.</li>
+          <li><strong>Reduce cognitive load</strong> with progressive disclosure (accordions, "show more") &mdash; but note that exclusive accordions (only one open) prevent comparing sections and can frustrate users.</li>
+          <li><strong>Offer choices where possible</strong> &mdash; e.g. letting people pick how they're contacted (text, voice, custom). Going beyond minimum compliance creates genuinely inclusive experiences.</li>
+        </ul>
+      </section>
+
+      <section class="card" id="feedback" aria-labelledby="feedback-h">
+        <h2 id="feedback-h"><span class="card__num" aria-hidden="true">08</span> Feedback &amp; Notifications</h2>
+        <ul class="checklist">
+          <li><strong>Transient messages must reach everyone.</strong> A toast, snackbar, or "Added to cart" confirmation that only flashes visually is invisible to screen-reader users &mdash; design these so the update is <em>announced</em>, not just shown. <span class="sc">SC 4.1.3</span></li>
+          <li><strong>Match urgency to interruption.</strong> Reserve interrupting ("assertive") announcements for critical, time-sensitive messages (session timeout, payment failure); routine success / status updates should be polite and non-interrupting. Don't over-notify.</li>
+        </ul>
+      </section>
+
+      <section class="card" id="navigation" aria-labelledby="navigation-h">
+        <h2 id="navigation-h"><span class="card__num" aria-hidden="true">09</span> Navigation &amp; Orientation</h2>
+        <ul class="checklist">
+          <li>Provide a way to <strong>skip repeated blocks</strong> (skip-to-content) so people don't tab through the same nav on every page. <span class="sc">SC 2.4.1</span></li>
+          <li>Give each <strong>page a unique, descriptive title</strong> that matches its main heading &mdash; it's the first orientation cue. <span class="sc">SC 2.4.2</span></li>
+          <li>Convey <strong>current state</strong> clearly (current page in nav, selected tab, pressed toggle) &mdash; visually and not by color alone.</li>
+        </ul>
+      </section>
+
+      <section class="card" id="touch" aria-labelledby="touch-h">
+        <h2 id="touch-h"><span class="card__num" aria-hidden="true">10</span> Touch &amp; Mobile</h2>
+        <ul class="checklist">
+          <li>Ensure <strong>touch targets are large enough</strong> and that controls sit where they visually appear &mdash; mobile screen-reader users explore by dragging a finger to where things look like they are.</li>
+        </ul>
+      </section>
+
+      <section class="card card--accent" id="mindset" aria-labelledby="mindset-h">
+        <h2 id="mindset-h"><span class="card__num" aria-hidden="true">★</span> The Overarching Mindset</h2>
+        <ul class="checklist">
+          <li><strong>WCAG is the floor, not the ceiling.</strong> Meeting criteria doesn't guarantee a usable experience &mdash; design for real people and, ideally, test with disabled users.</li>
+          <li><strong>Don't rely on a single sense or cue.</strong> Pair color with text, text with icons, motion with static fallbacks &mdash; redundancy is inclusive design.</li>
+        </ul>
+      </section>
+
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Distilled from the <strong>Practical Accessibility</strong> course notes by Sara Soueidan.</p>
+    </div>
+  </footer>
+</body>
+</html>

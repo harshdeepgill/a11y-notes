@@ -43,6 +43,11 @@
 
     <main id="main" tabindex="-1">
 
+      <p class="note" role="note">
+        <span class="note__icon" aria-hidden="true">i</span>
+        <span><strong>Treat these as your default.</strong> They're established best practices &mdash; aim to apply them in every design. Going against any of them should be a deliberate, well-justified last resort, never a shortcut.</span>
+      </p>
+
       <section class="card" id="color" aria-labelledby="color-h">
         <h2 id="color-h"><span class="card__num" aria-hidden="true">01</span> Color &amp; Contrast</h2>
         <ul class="checklist">
@@ -88,7 +93,6 @@
           <li><strong>Group related fields</strong> visually and semantically (address blocks, radio sets) with a group heading / legend.</li>
           <li><strong>Error messages must be specific and suggest a fix</strong> &mdash; "Enter a date as MM/DD/YYYY," not just "Invalid." <span class="sc">SC 3.3.1, 3.3.3</span></li>
           <li><strong>Collect all errors in one summary at the top.</strong> When a submitted form has errors, show a single container that lists every error &mdash; each item linking to the field it refers to &mdash; and move focus to it, instead of making people hunt for scattered inline messages. <span class="sc">SC 3.3.1</span></li>
-          <li>Don't validate too aggressively (avoid erroring the moment someone leaves a field); give people a chance to finish.</li>
           <li>For important / legal / financial actions, allow <strong>review, confirm, or undo</strong>. <span class="sc">SC 3.3.4</span></li>
         </ul>
       </section>
@@ -96,7 +100,6 @@
       <section class="card" id="labels" aria-labelledby="labels-h">
         <h2 id="labels-h"><span class="card__num" aria-hidden="true">06</span> Labels, Naming &amp; Repeated Controls</h2>
         <ul class="checklist">
-          <li><strong>The visible label must match the accessible name</strong> &mdash; voice-control users speak what they see. Avoid a button that reads "Search" but is named "Submit query." <span class="sc">SC 2.5.3</span></li>
           <li><strong>Make repeated controls distinguishable.</strong> A page of identical "Read more" / "Add to cart" buttons is confusing &mdash; add context ("Read more about [Article Title]").</li>
           <li><strong>Icon-only buttons need a text label</strong> (visible or accessible) &mdash; an icon alone isn't enough.</li>
         </ul>
@@ -122,7 +125,6 @@
       <section class="card" id="navigation" aria-labelledby="navigation-h">
         <h2 id="navigation-h"><span class="card__num" aria-hidden="true">09</span> Navigation &amp; Orientation</h2>
         <ul class="checklist">
-          <li>Provide a way to <strong>skip repeated blocks</strong> (skip-to-content) so people don't tab through the same nav on every page. <span class="sc">SC 2.4.1</span></li>
           <li>Give each <strong>page a unique, descriptive title</strong> that matches its main heading &mdash; it's the first orientation cue. <span class="sc">SC 2.4.2</span></li>
           <li>Convey <strong>current state</strong> clearly (current page in nav, selected tab, pressed toggle) &mdash; visually and not by color alone.</li>
         </ul>
